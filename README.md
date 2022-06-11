@@ -1,1 +1,1 @@
-# go-sample-skill
+# github.com/atomist-skills/go-skill
