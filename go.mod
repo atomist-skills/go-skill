@@ -1,4 +1,4 @@
-module go-skill
+module github.com/atomist-skills/go-skill
 
 go 1.18
 
