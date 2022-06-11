@@ -67,7 +67,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		logger.Println("Cloud Run execution started")
 
 		if handle, ok := handlers[event.Subscription.Name]; ok {
-			log.Printf("Invoking event handler '%s'", event.Subscription.Name)
+			logger.Printf("Invoking event handler '%s'", event.Subscription.Name)
 			eventContext := EventContext{
 				Data: event.Subscription.Result,
 				Log:  logger,
