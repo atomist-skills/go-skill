@@ -86,7 +86,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			eventContext.Message = messageSender
+			eventContext.Transact = messageSender.Transact
 
 			defer func() {
 				if err := recover(); err != nil {

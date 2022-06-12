@@ -98,7 +98,7 @@ type EventContext struct {
 	Skill         Skill
 	Event         EventIncoming
 	Log           *log.Logger
-	Message       MessageSender
+	Transact      Transact
 }
 
 type EventHandler func(ctx EventContext) Status

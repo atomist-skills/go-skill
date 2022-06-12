@@ -25,9 +25,11 @@ import (
 	"os"
 )
 
+type Transact func(entities []interface{}) error
+
 type MessageSender struct {
 	Send     func(status Status) error
-	Transact func(entities []interface{}) error
+	Transact Transact
 }
 
 func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Client, error) {
