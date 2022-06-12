@@ -20,6 +20,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"olympos.io/encoding/edn"
 	"os"
@@ -64,6 +65,7 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 		log.Printf("Sending message: %s", encodedMessage)
 		serverId, err := publishResult.Get(ctx)
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 		log.Printf("Sent message with '%s'", serverId)
@@ -95,6 +97,7 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 		log.Printf("Transacting entities: %s", encodedMessage)
 		serverId, err := publishResult.Get(ctx)
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 		log.Printf("Transacted entities with '%s'", serverId)
