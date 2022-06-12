@@ -24,9 +24,10 @@ import (
 	"log"
 	"olympos.io/encoding/edn"
 	"os"
+	"reflect"
 )
 
-type Transact func(entities []interface{}) error
+type Transact func(entities interface{}) error
 
 type MessageSender struct {
 	Send     func(status Status) error
@@ -72,8 +73,17 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 		return nil
 	}
 
-	messageSender.Transact = func(entities []interface{}) error {
-		bs, err := edn.Marshal(entities)
+	messageSender.Transact = func(entities interface{}) error {
+		var entityArray any
+		rt := reflect.TypeOf(entities)
+		switch rt.Kind() {
+		case reflect.Array:
+			entityArray = entities
+		default:
+			entityArray = []any{entities}
+		}
+
+		bs, err := edn.Marshal(entityArray)
 		if err != nil {
 			return err
 		}
