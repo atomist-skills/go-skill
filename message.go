@@ -78,6 +78,7 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 		rt := reflect.TypeOf(entities)
 		switch rt.Kind() {
 		case reflect.Array:
+		case reflect.Slice:
 			entityArray = entities
 		default:
 			entityArray = []any{entities}
