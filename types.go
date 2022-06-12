@@ -41,10 +41,19 @@ type SubscriptionIncoming struct {
 	Result [][]map[string]json.RawMessage `json:"result"`
 }
 
+type WebhookIncoming struct {
+	ParameterName      string            `json:"parameter_name"`
+	ParameterNameValue string            `json:"parameter_name_value"`
+	Url                string            `json:"url"`
+	Headers            map[string]string `json:"headers"`
+	Body               string            `json:"body"`
+}
+
 type EventIncoming struct {
 	CorrelationId string               `json:"correlation_id"`
 	Skill         Skill                `json:"skill"`
 	Subscription  SubscriptionIncoming `json:"subscription"`
+	Webhook       WebhookIncoming      `json:"webhook"`
 	WorkspaceId   string               `json:"team_id"`
 	LogUrl        string               `json:"log_url"`
 	Secrets       []Secret             `json:"secrets"`
@@ -87,7 +96,7 @@ type EventContext struct {
 	CorrelationId string
 	WorkspaceId   string
 	Skill         Skill
-	Data          [][]map[string]json.RawMessage
+	Event         EventIncoming
 	Log           *log.Logger
 	Message       MessageSender
 }

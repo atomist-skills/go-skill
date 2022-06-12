@@ -28,14 +28,3 @@ func Decode[P interface{}](event map[string]json.RawMessage) P {
 	json.Unmarshal(jsonbody, &decoded)
 	return decoded
 }
-
-func DecodedEventHandler[P interface{}](delegate func(payload P) Status) EventHandler {
-	return func(ctx EventContext) Status {
-		var status Status
-		for _, e := range ctx.Data {
-			decodedEvent := Decode[P](e[0])
-			status = delegate(decodedEvent)
-		}
-		return status
-	}
-}

@@ -61,16 +61,23 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			return
 		}
 
-		logger, loggingClient := InitLogging(event.WorkspaceId, event.CorrelationId, env.Message.MessageId, traceId, event.Subscription.Name, event.Skill)
+		var name string
+		if event.Webhook.ParameterName != "" {
+			name = event.Webhook.ParameterName
+		} else if event.Subscription.Name != "" {
+			name = event.Subscription.Name
+		}
+
+		logger, loggingClient := InitLogging(event.WorkspaceId, event.CorrelationId, env.Message.MessageId, traceId, name, event.Skill)
 		logger.Println("Cloud Run execution started")
 
-		if handle, ok := handlers[event.Subscription.Name]; ok {
-			logger.Printf("Invoking event handler '%s'", event.Subscription.Name)
+		if handle, ok := handlers[name]; ok {
+			logger.Printf("Invoking event handler '%s'", name)
 			eventContext := EventContext{
 				CorrelationId: event.CorrelationId,
 				WorkspaceId:   event.WorkspaceId,
 				Skill:         event.Skill,
-				Data:          event.Subscription.Result,
+				Event:         event,
 				Log:           logger,
 			}
 
