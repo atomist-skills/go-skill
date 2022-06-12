@@ -61,11 +61,12 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 			OrderingKey: eventContext.CorrelationId,
 		})
 
+		log.Printf("Sending message: %s", encodedMessage)
 		serverId, err := publishResult.Get(ctx)
 		if err != nil {
 			return err
 		}
-		log.Printf("Successfully sent message with '%s'", serverId)
+		log.Printf("Sent message with '%s'", serverId)
 		return nil
 	}
 
@@ -91,11 +92,12 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 			OrderingKey: eventContext.CorrelationId,
 		})
 
+		log.Printf("Transacting entities: %s", encodedMessage)
 		serverId, err := publishResult.Get(ctx)
 		if err != nil {
 			return err
 		}
-		log.Printf("Successfully sent message with '%s'", serverId)
+		log.Printf("Transacted entities with '%s'", serverId)
 		return nil
 	}
 
