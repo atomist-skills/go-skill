@@ -62,20 +62,28 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		}
 
 		logger, loggingClient := InitLogging(event.WorkspaceId, event.CorrelationId, env.Message.MessageId, traceId, event.Subscription.Name, event.Skill)
-		defer loggingClient.Close()
-
 		logger.Println("Cloud Run execution started")
 
 		if handle, ok := handlers[event.Subscription.Name]; ok {
 			logger.Printf("Invoking event handler '%s'", event.Subscription.Name)
 			eventContext := EventContext{
-				Data: event.Subscription.Result,
-				Log:  logger,
+				CorrelationId: event.CorrelationId,
+				WorkspaceId:   event.WorkspaceId,
+				Skill:         event.Skill,
+				Data:          event.Subscription.Result,
+				Log:           logger,
 			}
+
+			messageSender, pubSubClient, err := CreateMessageSender(eventContext)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			eventContext.Message = messageSender
 
 			defer func() {
 				if err := recover(); err != nil {
-					SendStatus(event, Status{
+					messageSender.Send(Status{
 						Code:   1,
 						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, event.Subscription.Name),
 					})
@@ -86,8 +94,11 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			}()
 
 			status := handle(eventContext)
-			SendStatus(event, status)
+			messageSender.Send(status)
 			w.WriteHeader(201)
+
+			defer loggingClient.Close()
+			defer pubSubClient.Close()
 		} else {
 			log.Printf("Event handler '%s' not found", event.Subscription.Name)
 			w.WriteHeader(404)

@@ -75,9 +75,21 @@ type StatusHandlerResponse struct {
 	Skill         Skill  `json:"skill"`
 }
 
+type TransactEntitiesResponse struct {
+	ApiVersion    string `json:"api_version"`
+	CorrelationId string `json:"correlation_id"`
+	Team          Team   `json:"team"`
+	Entities      string `json:"entities"`
+	Type          string `json:"type"`
+}
+
 type EventContext struct {
-	Data [][]map[string]json.RawMessage
-	Log  *log.Logger
+	CorrelationId string
+	WorkspaceId   string
+	Skill         Skill
+	Data          [][]map[string]json.RawMessage
+	Log           *log.Logger
+	Message       MessageSender
 }
 
 type EventHandler func(ctx EventContext) Status

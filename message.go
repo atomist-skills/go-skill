@@ -21,41 +21,81 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"olympos.io/encoding/edn"
 	"os"
 )
 
-func SendStatus(event EventIncoming, status Status) error {
-	message := StatusHandlerResponse{
-		ApiVersion:    "1",
-		CorrelationId: event.CorrelationId,
-		Team: Team{
-			Id: event.WorkspaceId,
-		},
-		Skill:  event.Skill,
-		Status: status,
-	}
+type MessageSender struct {
+	Send     func(status Status) error
+	Transact func(entities []interface{}) error
+}
 
-	encodedMessage, _ := json.Marshal(message)
+func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Client, error) {
+	messageSender := MessageSender{}
 
 	ctx := context.Background()
 	client, err := pubsub.NewClient(ctx, "atomist-skill-production")
 	if err != nil {
-		return err
+		return messageSender, client, err
 	}
-	defer client.Close()
-
 	t := client.Topic(os.Getenv("ATOMIST_TOPIC"))
 	t.EnableMessageOrdering = true
 
-	publishResult := t.Publish(ctx, &pubsub.Message{
-		Data:        encodedMessage,
-		OrderingKey: event.CorrelationId,
-	})
+	messageSender.Send = func(status Status) error {
+		message := StatusHandlerResponse{
+			ApiVersion:    "1",
+			CorrelationId: eventContext.CorrelationId,
+			Team: Team{
+				Id: eventContext.WorkspaceId,
+			},
+			Skill:  eventContext.Skill,
+			Status: status,
+		}
 
-	serverId, err := publishResult.Get(ctx)
-	if err != nil {
-		return err
+		encodedMessage, _ := json.Marshal(message)
+
+		publishResult := t.Publish(ctx, &pubsub.Message{
+			Data:        encodedMessage,
+			OrderingKey: eventContext.CorrelationId,
+		})
+
+		serverId, err := publishResult.Get(ctx)
+		if err != nil {
+			return err
+		}
+		log.Printf("Successfully sent message with '%s'", serverId)
+		return nil
 	}
-	log.Printf("Successfully sent message with '%s'", serverId)
-	return nil
+
+	messageSender.Transact = func(entities []interface{}) error {
+		bs, err := edn.Marshal(entities)
+		if err != nil {
+			return err
+		}
+
+		message := TransactEntitiesResponse{
+			ApiVersion:    "1",
+			CorrelationId: eventContext.CorrelationId,
+			Team: Team{
+				Id: eventContext.WorkspaceId,
+			},
+			Type:     "facts_ingestion",
+			Entities: string(bs),
+		}
+		encodedMessage, _ := json.Marshal(message)
+
+		publishResult := t.Publish(ctx, &pubsub.Message{
+			Data:        encodedMessage,
+			OrderingKey: eventContext.CorrelationId,
+		})
+
+		serverId, err := publishResult.Get(ctx)
+		if err != nil {
+			return err
+		}
+		log.Printf("Successfully sent message with '%s'", serverId)
+		return nil
+	}
+
+	return messageSender, client, nil
 }
