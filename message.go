@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"olympos.io/encoding/edn"
 	"os"
 	"reflect"
@@ -63,13 +62,13 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 			OrderingKey: eventContext.CorrelationId,
 		})
 
-		log.Printf("Sending message: %s", encodedMessage)
+		eventContext.Log.Printf("Sending message: %s", encodedMessage)
 		serverId, err := publishResult.Get(ctx)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-		log.Printf("Sent message with '%s'", serverId)
+		eventContext.Log.Printf("Sent message with '%s'", serverId)
 		return nil
 	}
 
@@ -105,13 +104,13 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 			OrderingKey: eventContext.CorrelationId,
 		})
 
-		log.Printf("Transacting entities: %s", encodedMessage)
+		eventContext.Log.Printf("Transacting entities: %s", encodedMessage)
 		serverId, err := publishResult.Get(ctx)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-		log.Printf("Transacted entities with '%s'", serverId)
+		eventContext.Log.Printf("Transacted entities with '%s'", serverId)
 		return nil
 	}
 
