@@ -73,6 +73,8 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		if handle, ok := handlers[name]; ok {
 			logger.Printf("Invoking event handler '%s'", name)
+			// logger.Printf("Incoming event message: ")
+
 			eventContext := EventContext{
 				CorrelationId: event.CorrelationId,
 				WorkspaceId:   event.WorkspaceId,
