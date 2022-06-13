@@ -22,9 +22,7 @@ import (
 	"log"
 )
 
-func InitLogging(workspaceId string, correlationId string, messageId string, traceId string, name string, skill Skill) (*log.Logger, *logging.Client) {
-	ctx := context.Background()
-
+func InitLogging(ctx context.Context, workspaceId string, correlationId string, messageId string, traceId string, name string, skill Skill) (*log.Logger, *logging.Client) {
 	client, err := logging.NewClient(ctx, "atomist-skill-production")
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)

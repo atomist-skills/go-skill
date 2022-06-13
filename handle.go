@@ -17,6 +17,7 @@
 package skill
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -43,6 +44,9 @@ func Handle(handlers Handlers) {
 
 func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		start := time.Now().UnixMilli()
 		traceId := r.Header.Get("x-cloud-trace-context")
 
@@ -68,7 +72,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			name = event.Subscription.Name
 		}
 
-		logger, loggingClient := InitLogging(event.WorkspaceId, event.CorrelationId, env.Message.MessageId, traceId, name, event.Skill)
+		logger, loggingClient := InitLogging(ctx, event.WorkspaceId, event.CorrelationId, env.Message.MessageId, traceId, name, event.Skill)
 		logger.Println("Cloud Run execution started")
 
 		if handle, ok := handlers[name]; ok {
@@ -81,6 +85,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 				Skill:         event.Skill,
 				Event:         event,
 				Log:           logger,
+				Context:       ctx,
 			}
 
 			messageSender, pubSubClient, err := CreateMessageSender(eventContext)

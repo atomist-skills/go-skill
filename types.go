@@ -17,6 +17,7 @@
 package skill
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 )
@@ -99,6 +100,7 @@ type EventContext struct {
 	Event         EventIncoming
 	Log           *log.Logger
 	Transact      Transact
+	Context       context.Context
 }
 
 type EventHandler func(ctx EventContext) Status

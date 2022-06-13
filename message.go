@@ -18,7 +18,6 @@ package skill
 
 import (
 	"cloud.google.com/go/pubsub"
-	"context"
 	"encoding/json"
 	"fmt"
 	"olympos.io/encoding/edn"
@@ -36,8 +35,7 @@ type MessageSender struct {
 func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Client, error) {
 	messageSender := MessageSender{}
 
-	ctx := context.Background()
-	client, err := pubsub.NewClient(ctx, "atomist-skill-production")
+	client, err := pubsub.NewClient(eventContext.Context, "atomist-skill-production")
 	if err != nil {
 		return messageSender, client, err
 	}
@@ -57,13 +55,13 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 
 		encodedMessage, _ := json.Marshal(message)
 
-		publishResult := t.Publish(ctx, &pubsub.Message{
+		publishResult := t.Publish(eventContext.Context, &pubsub.Message{
 			Data:        encodedMessage,
 			OrderingKey: eventContext.CorrelationId,
 		})
 
 		eventContext.Log.Printf("Sending message: %s", encodedMessage)
-		serverId, err := publishResult.Get(ctx)
+		serverId, err := publishResult.Get(eventContext.Context)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -99,13 +97,13 @@ func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Clie
 		}
 		encodedMessage, _ := json.Marshal(message)
 
-		publishResult := t.Publish(ctx, &pubsub.Message{
+		publishResult := t.Publish(eventContext.Context, &pubsub.Message{
 			Data:        encodedMessage,
 			OrderingKey: eventContext.CorrelationId,
 		})
 
 		eventContext.Log.Printf("Transacting entities: %s", encodedMessage)
-		serverId, err := publishResult.Get(ctx)
+		serverId, err := publishResult.Get(eventContext.Context)
 		if err != nil {
 			fmt.Println(err)
 			return err
