@@ -53,7 +53,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		var env MessageEnvelope
 		err := json.NewDecoder(r.Body).Decode(&env)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(201)
 			return
 		}
 
@@ -61,7 +61,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		var event EventIncoming
 		err = json.Unmarshal(data, &event)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(201)
 			return
 		}
 
@@ -90,7 +90,8 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 			messageSender, pubSubClient, err := CreateMessageSender(eventContext)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				logger.Printf("Error occurred creating message sender: %v", err)
+				w.WriteHeader(201)
 				return
 			}
 			eventContext.Transact = messageSender.Transact
@@ -101,7 +102,8 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 						Code:   1,
 						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, event.Subscription.Name),
 					})
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					w.WriteHeader(201)
+					logger.Printf("Unhandled error occurred: %v", err)
 					logger.Printf("Cloud Run execution took %d ms, finished with status: 'ok'", time.Now().UnixMilli()-start)
 					return
 				}
@@ -115,7 +117,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			defer pubSubClient.Close()
 		} else {
 			log.Printf("Event handler '%s' not found", event.Subscription.Name)
-			w.WriteHeader(404)
+			w.WriteHeader(201)
 		}
 		logger.Printf("Cloud Run execution took %d ms, finished with status: 'ok'", time.Now().UnixMilli()-start)
 	}
