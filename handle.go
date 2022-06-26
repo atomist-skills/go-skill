@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-func Handle(handlers Handlers) {
+func Start(handlers Handlers) {
 	log.Print("Starting server...")
 	http.HandleFunc("/", createHttpHandler(handlers))
 
