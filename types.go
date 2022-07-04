@@ -31,7 +31,7 @@ type ConfigurationIncoming struct {
 	parameters []ParameterValue `edn:"parameters"`
 }
 
-type SubscriptionIncoming[T []interface{}] struct {
+type SubscriptionIncoming[T []any] struct {
 	Name          string                `edn:"name"`
 	Configuration ConfigurationIncoming `edn:"configuration"`
 	AfterBasisT   int64                 `edn:"tx"`
@@ -39,7 +39,7 @@ type SubscriptionIncoming[T []interface{}] struct {
 	Result        T                     `edn:"result"`
 }
 
-type Context[T []interface{}] struct {
+type Context[T []any] struct {
 	Subscription SubscriptionIncoming[T] `edn:"subscription"`
 }
 
@@ -50,7 +50,7 @@ type Urls struct {
 	Query       string `edn:"query"`
 }
 
-type EventIncoming[T []interface{}] struct {
+type EventIncoming[T []any] struct {
 	ExecutionId string      `edn:"correlation-id"`
 	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
@@ -80,13 +80,13 @@ type Status struct {
 	Reason string      `edn:"reason"`
 }
 
-type EventContext[T []interface{}] struct {
+type EventContext[T []any] struct {
 	Event    EventIncoming[T]
 	Log      Logger
 	Transact Transact
 	Context  context.Context
 }
 
-type EventHandler func(ctx EventContext) Status
+type EventHandler[T []any] func(ctx EventContext[T]) Status
 
-type Handlers map[string]EventHandler
+type Handlers map[string]EventHandler[[]any]
