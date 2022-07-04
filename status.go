@@ -42,7 +42,7 @@ func SendStatus(ctx EventContext, status Status) error {
 		return err
 	}
 	if resp.StatusCode != 202 {
-		log.Fatalf("Error sending logs: %d %s", resp.StatusCode, resp.Status)
+		log.Printf("Error sending logs: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()
