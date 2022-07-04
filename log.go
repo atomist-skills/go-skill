@@ -17,29 +17,49 @@
 package skill
 
 import (
-	"cloud.google.com/go/logging"
-	"context"
-	"log"
+	"bytes"
+	"fmt"
+	"net/http"
+	"olympos.io/encoding/edn"
 )
 
-func InitLogging(ctx context.Context, workspaceId string, correlationId string, messageId string, traceId string, name string, skill Skill) (*log.Logger, *logging.Client) {
-	client, err := logging.NewClient(ctx, "atomist-skill-production")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+type Logger struct {
+	Log  func(msg string) error
+	Logf func(format string, a ...any) error
+}
+
+type LogBody struct {
+	Logs []string `edn:"logs"`
+}
+
+func CreateLogger(url string, token string) Logger {
+	logger := Logger{}
+
+	logger.Log = func(msg string) error {
+		client := &http.Client{}
+
+		bs, err := edn.Marshal(LogBody{Logs: []string{msg}})
+		if err != nil {
+			return err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bs))
+		req.Header.Set("Authorization", "Bearer "+token)
+		if err != nil {
+			return err
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		return nil
 	}
 
-	logName := "skills_logging"
-	logger := client.Logger(logName, logging.CommonLabels(map[string]string{
-		"correlation_id":  correlationId,
-		"workspace_id":    workspaceId,
-		"event_id":        messageId,
-		"trace_id":        traceId,
-		"name":            name,
-		"skill_id":        skill.Id,
-		"skill_namespace": skill.Namespace,
-		"skill_name":      skill.Name,
-		"skill_version":   skill.Version,
-	})).StandardLogger(logging.Info)
+	logger.Logf = func(format string, a ...any) error {
+		return logger.Log(fmt.Sprint(format, a))
+	}
 
-	return logger, client
+	return logger
 }
