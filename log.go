@@ -22,6 +22,14 @@ import (
 	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
+	"time"
+)
+
+const (
+	Debug edn.Keyword = "debug"
+	Info              = "info"
+	Warn              = "warn"
+	Error             = "error"
 )
 
 type Logger struct {
@@ -29,8 +37,14 @@ type Logger struct {
 	Printf func(format string, a ...any) error
 }
 
+type LogEntry struct {
+	Timestamp string      `edn:"timestamp"`
+	Level     edn.Keyword `edn:"level"`
+	Text      string      `edn:"text"`
+}
+
 type LogBody struct {
-	Logs []string `edn:"logs"`
+	Logs []LogEntry `edn:"logs"`
 }
 
 func CreateLogger(url string, token string) Logger {
@@ -42,7 +56,11 @@ func CreateLogger(url string, token string) Logger {
 
 		client := &http.Client{}
 
-		bs, err := edn.MarshalIndent(LogBody{Logs: []string{msg}}, "", " ")
+		bs, err := edn.MarshalIndent(LogBody{Logs: []LogEntry{{
+			Timestamp: time.Now().Format(time.RFC3339),
+			Level:     Info,
+			Text:      msg,
+		}}}, "", " ")
 		if err != nil {
 			return err
 		}
