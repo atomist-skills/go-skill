@@ -34,6 +34,7 @@ func SendStatus(ctx EventContext, status Status) error {
 	ctx.Log.Printf("Sending status: %s", string(bs))
 	req, err := http.NewRequest(http.MethodPatch, ctx.Event.Urls.Execution, bytes.NewBuffer(bs))
 	req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
+	req.Header.Set("Content-Type", "application/edn")
 	if err != nil {
 		return err
 	}

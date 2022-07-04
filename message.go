@@ -59,6 +59,7 @@ func CreateMessageSender(ctx EventContext) MessageSender {
 
 		req, err := http.NewRequest(http.MethodPost, ctx.Event.Urls.Transactions, bytes.NewBuffer(bs))
 		req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
+		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
 			return err
 		}
