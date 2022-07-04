@@ -47,14 +47,14 @@ func CreateMessageSender(ctx EventContext) (MessageSender, error) {
 			entityArray = []any{entities}
 		}
 
-		bs, err := edn.Marshal(TransactBody{Transactions: entityArray})
+		bs, err := edn.MarshalIndent(TransactBody{Transactions: entityArray}, "", " ")
 		if err != nil {
 			return err
 		}
 
 		client := &http.Client{}
 
-		ctx.Log.Logf("Transacting entities: %s", string(bs))
+		ctx.Log.Printf("Transacting entities: %s", string(bs))
 
 		req, err := http.NewRequest(http.MethodPost, ctx.Event.Urls.Transactions, bytes.NewBuffer(bs))
 		req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
