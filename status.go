@@ -30,7 +30,7 @@ func SendStatus(ctx EventContext, status Status) error {
 		return err
 	}
 
-	ctx.Log.Printf("Sending status: %s", string(bs), "", " ")
+	ctx.Log.Printf("Sending status: %s", string(bs))
 	req, err := http.NewRequest(http.MethodPatch, ctx.Event.Urls.Execution, bytes.NewBuffer(bs))
 	req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
 	if err != nil {
