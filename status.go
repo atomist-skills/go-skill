@@ -23,10 +23,16 @@ import (
 	"olympos.io/encoding/edn"
 )
 
+type StatusBody struct {
+	Status Status `edn:"status"`
+}
+
 func SendStatus(ctx EventContext, status Status) error {
 	client := &http.Client{}
 
-	bs, err := edn.MarshalIndent(status, "", " ")
+	bs, err := edn.MarshalIndent(StatusBody{
+		Status: status,
+	}, "", " ")
 	if err != nil {
 		return err
 	}
