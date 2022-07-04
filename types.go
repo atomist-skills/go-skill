@@ -51,7 +51,7 @@ type Urls struct {
 }
 
 type EventIncoming[T any] struct {
-	ExecutionId string      `edn:"correlation-id"`
+	ExecutionId string      `edn:"execution-id"`
 	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
 	WorkspaceId string      `edn:"workspace-id"`
