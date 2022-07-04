@@ -19,6 +19,7 @@ package skill
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
 )
@@ -36,6 +37,9 @@ func CreateLogger(url string, token string) Logger {
 	logger := Logger{}
 
 	logger.Log = func(msg string) error {
+		// Print on console as well for now
+		log.Print(msg)
+
 		client := &http.Client{}
 
 		bs, err := edn.Marshal(LogBody{Logs: []string{msg}})
