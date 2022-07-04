@@ -45,9 +45,6 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		// Temp logging
-		log.Print(r.Body)
-
 		var event EventIncoming[any]
 		err := edn.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
@@ -91,8 +88,8 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			SendStatus(eventContext, Status{
 				State: Running,
 			})
-			status := handle.(EventHandler[any])(eventContext)
-			SendStatus(eventContext, status)
+			status := handle(eventContext)
+			SendStatus(eventContext, status.(Status))
 			w.WriteHeader(201)
 
 		} else {
