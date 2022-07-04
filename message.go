@@ -33,7 +33,7 @@ type TransactBody struct {
 	Transactions []interface{} `edn:"transactions"`
 }
 
-func CreateMessageSender(ctx EventContext[any]) (MessageSender, error) {
+func CreateMessageSender(ctx EventContext) (MessageSender, error) {
 	messageSender := MessageSender{}
 
 	messageSender.Transact = func(entities interface{}) error {

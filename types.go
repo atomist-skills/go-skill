@@ -31,16 +31,16 @@ type ConfigurationIncoming struct {
 	parameters []ParameterValue `edn:"parameters"`
 }
 
-type SubscriptionIncoming[T any] struct {
-	Name          string                `edn:"name"`
-	Configuration ConfigurationIncoming `edn:"configuration"`
-	AfterBasisT   int64                 `edn:"tx"`
-	Tx            int64                 `edn:"after-basis-t"`
-	Result        []T                   `edn:"result"`
+type SubscriptionIncoming struct {
+	Name          string                        `edn:"name"`
+	Configuration ConfigurationIncoming         `edn:"configuration"`
+	AfterBasisT   int64                         `edn:"tx"`
+	Tx            int64                         `edn:"after-basis-t"`
+	Result        [][]map[string]edn.RawMessage `edn:"result"`
 }
 
-type Context[T any] struct {
-	Subscription SubscriptionIncoming[T] `edn:"subscription"`
+type Context struct {
+	Subscription SubscriptionIncoming `edn:"subscription"`
 }
 
 type Urls struct {
@@ -50,12 +50,12 @@ type Urls struct {
 	Query       string `edn:"query"`
 }
 
-type EventIncoming[T any] struct {
+type EventIncoming struct {
 	ExecutionId string      `edn:"execution-id"`
 	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
 	WorkspaceId string      `edn:"workspace-id"`
-	Context     Context[T]  `edn:"context"`
+	Context     Context     `edn:"context"`
 	Urls        Urls        `edn:"urls"`
 	Token       string      `edn:"token"`
 }
@@ -80,13 +80,13 @@ type Status struct {
 	Reason string      `edn:"reason"`
 }
 
-type EventContext[T any] struct {
-	Event    EventIncoming[T]
+type EventContext struct {
+	Event    EventIncoming
 	Log      Logger
 	Transact Transact
 	Context  context.Context
 }
 
-type EventHandler[T any] func(ctx EventContext[T]) Status
+type EventHandler func(ctx EventContext) Status
 
-type Handlers map[string]func(ctx any) Status
+type Handlers map[string]EventHandler
