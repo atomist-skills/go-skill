@@ -45,6 +45,9 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		// Temp logging
+		log.Print(r.Body)
+
 		var event EventIncoming[any]
 		err := edn.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
