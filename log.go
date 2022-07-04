@@ -75,6 +75,10 @@ func CreateLogger(url string, token string) Logger {
 		if err != nil {
 			return err
 		}
+		if resp.StatusCode != 202 {
+			log.Printf("Error sending logs: %s\n%s", resp.Status, string(bs))
+		}
+
 		defer resp.Body.Close()
 
 		return nil
