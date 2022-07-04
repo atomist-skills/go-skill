@@ -28,3 +28,4 @@ func Decode[P interface{}](event map[string]json.RawMessage) P {
 	json.Unmarshal(jsonbody, &decoded)
 	return decoded
 }
+ 
