@@ -88,7 +88,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			SendStatus(eventContext, Status{
 				State: Running,
 			})
-			status := handle(eventContext)
+			status := handle.(EventHandler[any])(eventContext)
 			SendStatus(eventContext, status)
 			w.WriteHeader(201)
 
