@@ -67,7 +67,7 @@ func CreateMessageSender(ctx EventContext) MessageSender {
 			return err
 		}
 		if resp.StatusCode != 202 {
-			log.Fatalf("Error transacting entities: %d %s", resp.StatusCode, resp.Status)
+			log.Printf("Error transacting entities: %s", resp.Status)
 		}
 		defer resp.Body.Close()
 
