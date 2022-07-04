@@ -32,11 +32,11 @@ type ConfigurationIncoming struct {
 }
 
 type SubscriptionIncoming struct {
-	Name          string                        `edn:"name"`
-	Configuration ConfigurationIncoming         `edn:"configuration"`
-	AfterBasisT   int64                         `edn:"tx"`
-	Tx            int64                         `edn:"after-basis-t"`
-	Result        [][]map[string]edn.RawMessage `edn:"result"`
+	Name          string                             `edn:"name"`
+	Configuration ConfigurationIncoming              `edn:"configuration"`
+	AfterBasisT   int64                              `edn:"tx"`
+	Tx            int64                              `edn:"after-basis-t"`
+	Result        [][]map[edn.Keyword]edn.RawMessage `edn:"result"`
 }
 
 type Context struct {
