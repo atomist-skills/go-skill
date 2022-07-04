@@ -89,4 +89,4 @@ type EventContext[T any] struct {
 
 type EventHandler[T any] func(ctx EventContext[T]) Status
 
-type Handlers map[string]interface{}
+type Handlers map[string]func(ctx any) Status
