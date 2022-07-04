@@ -31,15 +31,15 @@ type ConfigurationIncoming struct {
 	parameters []ParameterValue `edn:"parameters"`
 }
 
-type SubscriptionIncoming[T []any] struct {
+type SubscriptionIncoming[T any] struct {
 	Name          string                `edn:"name"`
 	Configuration ConfigurationIncoming `edn:"configuration"`
 	AfterBasisT   int64                 `edn:"tx"`
 	Tx            int64                 `edn:"after-basis-t"`
-	Result        T                     `edn:"result"`
+	Result        []T                   `edn:"result"`
 }
 
-type Context[T []any] struct {
+type Context[T any] struct {
 	Subscription SubscriptionIncoming[T] `edn:"subscription"`
 }
 
@@ -50,7 +50,7 @@ type Urls struct {
 	Query       string `edn:"query"`
 }
 
-type EventIncoming[T []any] struct {
+type EventIncoming[T any] struct {
 	ExecutionId string      `edn:"correlation-id"`
 	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
@@ -80,7 +80,7 @@ type Status struct {
 	Reason string      `edn:"reason"`
 }
 
-type EventContext[T []any] struct {
+type EventContext[T any] struct {
 	Event    EventIncoming[T]
 	Log      Logger
 	Transact Transact
