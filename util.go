@@ -16,31 +16,11 @@
 
 package skill
 
-import (
-	"bytes"
-	"net/http"
-	"olympos.io/encoding/edn"
-)
+import "olympos.io/encoding/edn"
 
-func SendStatus(ctx EventContext, status Status) error {
-	client := &http.Client{}
-
-	bs, err := edn.MarshalIndent(status, "", " ")
-	if err != nil {
-		return err
-	}
-
-	ctx.Log.Printf("Sending status: %s", string(bs), "", " ")
-	req, err := http.NewRequest(http.MethodPatch, ctx.Event.Urls.Execution, bytes.NewBuffer(bs))
-	req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
-	if err != nil {
-		return err
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
+func Decode[P interface{}](event map[edn.Keyword]edn.RawMessage) P {
+	ednboby, _ := edn.Marshal(event)
+	var decoded P
+	edn.Unmarshal(ednboby, &decoded)
+	return decoded
 }
