@@ -18,6 +18,7 @@ package skill
 
 import (
 	"bytes"
+	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
 )
@@ -40,6 +41,10 @@ func SendStatus(ctx EventContext, status Status) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 202 {
+		log.Fatalf("Error sending logs: %d %s", resp.StatusCode, resp.Status)
+	}
+
 	defer resp.Body.Close()
 
 	return nil

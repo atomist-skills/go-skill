@@ -18,6 +18,7 @@ package skill
 
 import (
 	"bytes"
+	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
 	"reflect"
@@ -64,6 +65,9 @@ func CreateMessageSender(ctx EventContext) MessageSender {
 		resp, err := client.Do(req)
 		if err != nil {
 			return err
+		}
+		if resp.StatusCode != 202 {
+			log.Fatalf("Error transacting entities: %d %s", resp.StatusCode, resp.Status)
 		}
 		defer resp.Body.Close()
 
