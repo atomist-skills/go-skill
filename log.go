@@ -62,7 +62,7 @@ func CreateLogger(url string, token string) Logger {
 	}
 
 	logger.Logf = func(format string, a ...any) error {
-		return logger.Log(fmt.Sprint(format, a))
+		return logger.Log(fmt.Sprintf(format, a))
 	}
 
 	return logger
