@@ -25,8 +25,8 @@ import (
 )
 
 type Logger struct {
-	Log  func(msg string) error
-	Logf func(format string, a ...any) error
+	Print  func(msg string) error
+	Printf func(format string, a ...any) error
 }
 
 type LogBody struct {
@@ -36,13 +36,13 @@ type LogBody struct {
 func CreateLogger(url string, token string) Logger {
 	logger := Logger{}
 
-	logger.Log = func(msg string) error {
+	logger.Print = func(msg string) error {
 		// Print on console as well for now
 		log.Print(msg)
 
 		client := &http.Client{}
 
-		bs, err := edn.Marshal(LogBody{Logs: []string{msg}})
+		bs, err := edn.MarshalIndent(LogBody{Logs: []string{msg}}, "", " ")
 		if err != nil {
 			return err
 		}
@@ -61,8 +61,8 @@ func CreateLogger(url string, token string) Logger {
 		return nil
 	}
 
-	logger.Logf = func(format string, a ...any) error {
-		return logger.Log(fmt.Sprintf(format, a))
+	logger.Printf = func(format string, a ...any) error {
+		return logger.Print(fmt.Sprintf(format, a...))
 	}
 
 	return logger
