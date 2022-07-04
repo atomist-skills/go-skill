@@ -49,6 +49,7 @@ func CreateLogger(url string, token string) Logger {
 
 		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bs))
 		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
 			return err
 		}
