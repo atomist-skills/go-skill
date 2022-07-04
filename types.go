@@ -31,16 +31,16 @@ type ConfigurationIncoming struct {
 	parameters []ParameterValue `edn:"parameters"`
 }
 
-type SubscriptionIncoming struct {
-	Name          string                        `edn:"name"`
-	Configuration ConfigurationIncoming         `edn:"configuration"`
-	AfterBasisT   int64                         `edn:"tx"`
-	Tx            int64                         `edn:"after-basis-t"`
-	Result        [][]map[string]edn.RawMessage `edn:"result"`
+type SubscriptionIncoming[T []interface{}] struct {
+	Name          string                `edn:"name"`
+	Configuration ConfigurationIncoming `edn:"configuration"`
+	AfterBasisT   int64                 `edn:"tx"`
+	Tx            int64                 `edn:"after-basis-t"`
+	Result        T                     `edn:"result"`
 }
 
-type Context struct {
-	Subscription SubscriptionIncoming `edn:"subscription"`
+type Context[T []interface{}] struct {
+	Subscription SubscriptionIncoming[T] `edn:"subscription"`
 }
 
 type Urls struct {
@@ -50,12 +50,12 @@ type Urls struct {
 	Query       string `edn:"query"`
 }
 
-type EventIncoming struct {
+type EventIncoming[T []interface{}] struct {
 	ExecutionId string      `edn:"correlation-id"`
 	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
 	WorkspaceId string      `edn:"workspace-id"`
-	Context     Context     `edn:"context"`
+	Context     Context[T]  `edn:"context"`
 	Urls        Urls        `edn:"urls"`
 	Token       string      `edn:"token"`
 }
@@ -80,8 +80,8 @@ type Status struct {
 	Reason string      `edn:"reason"`
 }
 
-type EventContext struct {
-	Event    EventIncoming
+type EventContext[T []interface{}] struct {
+	Event    EventIncoming[T]
 	Log      Logger
 	Transact Transact
 	Context  context.Context
