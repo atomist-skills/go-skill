@@ -54,7 +54,7 @@ func CreateMessageSender(ctx EventContext) (MessageSender, error) {
 
 		client := &http.Client{}
 
-		req, err := http.NewRequest(http.MethodPost, ctx.Event.Urls.Transaction, bytes.NewBuffer(bs))
+		req, err := http.NewRequest(http.MethodPost, ctx.Event.Urls.Transactions, bytes.NewBuffer(bs))
 		req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
 		if err != nil {
 			return err
