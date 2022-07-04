@@ -65,12 +65,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 				Context: ctx,
 			}
 
-			messageSender, err := CreateMessageSender(eventContext)
-			if err != nil {
-				logger.Printf("Error occurred creating message sender: %v", err)
-				w.WriteHeader(201)
-				return
-			}
+			messageSender := CreateMessageSender(eventContext)
 			eventContext.Transact = messageSender.Transact
 
 			defer func() {
