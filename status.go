@@ -22,7 +22,7 @@ import (
 	"olympos.io/encoding/edn"
 )
 
-func SendStatus(ctx EventContext[any], status Status) error {
+func SendStatus(ctx EventContext, status Status) error {
 	client := &http.Client{}
 
 	bs, err := edn.Marshal(status)
