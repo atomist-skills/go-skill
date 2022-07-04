@@ -44,10 +44,10 @@ type Context struct {
 }
 
 type Urls struct {
-	Execution   string `edn:"execution"`
-	Logs        string `edn:"logs"`
-	Transaction string `edn:"transaction"`
-	Query       string `edn:"query"`
+	Execution    string `edn:"execution"`
+	Logs         string `edn:"logs"`
+	Transactions string `edn:"transactions"`
+	Query        string `edn:"query"`
 }
 
 type EventIncoming struct {
