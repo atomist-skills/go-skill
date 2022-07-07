@@ -22,6 +22,7 @@ import (
 	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
+	"runtime/debug"
 	"time"
 )
 
@@ -88,5 +89,29 @@ func CreateLogger(url string, token string) Logger {
 		return logger.Print(fmt.Sprintf(format, a...))
 	}
 
+	debugInfo(logger)
+
 	return logger
+}
+
+func debugInfo(logger Logger) {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		goVersion := bi.GoVersion
+		path := bi.Main.Path
+		version := bi.Main.Version
+
+		var skillDep *debug.Module
+		for _, v := range bi.Deps {
+			if v.Path == "github.com/atomist-skills/go-skill" {
+				skillDep = v
+			}
+		}
+		var revision debug.BuildSetting
+		for _, v := range bi.Settings {
+			if v.Key == "vcs.revision" {
+				revision = v
+			}
+		}
+		logger.Printf("Starting http listener %s:%s (%s) %s:%s %s", path, version, revision.Value[0:7], skillDep.Path, skillDep.Version, goVersion)
+	}
 }
