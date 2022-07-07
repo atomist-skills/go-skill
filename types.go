@@ -81,10 +81,11 @@ type Status struct {
 }
 
 type EventContext struct {
-	Event    EventIncoming
-	Log      Logger
-	Transact Transact
-	Context  context.Context
+	Event           EventIncoming
+	Log             Logger
+	Transact        Transact
+	TransactOrdered TransactOrdered
+	Context         context.Context
 }
 
 type EventHandler func(ctx EventContext) Status

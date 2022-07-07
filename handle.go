@@ -67,6 +67,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 			messageSender := CreateMessageSender(eventContext)
 			eventContext.Transact = messageSender.Transact
+			eventContext.TransactOrdered = messageSender.TransactOrdered
 
 			defer func() {
 				if err := recover(); err != nil {
