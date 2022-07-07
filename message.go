@@ -25,19 +25,26 @@ import (
 )
 
 type Transact func(entities interface{}) error
+type TransactOrdered func(entities interface{}, orderingKey string) error
 
 type MessageSender struct {
-	Transact Transact
+	Transact        Transact
+	TransactOrdered TransactOrdered
+}
+
+type Transaction struct {
+	Data        []interface{} `edn:"data"`
+	OrderingKey string        `edn:"ordering-key"`
 }
 
 type TransactBody struct {
-	Transactions []interface{} `edn:"transactions"`
+	Transactions []Transaction `edn:"transactions"`
 }
 
 func CreateMessageSender(ctx EventContext) MessageSender {
 	messageSender := MessageSender{}
 
-	messageSender.Transact = func(entities interface{}) error {
+	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
 		var entityArray []interface{}
 		rt := reflect.TypeOf(entities)
 		switch rt.Kind() {
@@ -48,7 +55,14 @@ func CreateMessageSender(ctx EventContext) MessageSender {
 			entityArray = []any{entities}
 		}
 
-		bs, err := edn.MarshalIndent(TransactBody{Transactions: entityArray}, "", " ")
+		var transaction = Transaction{Data: entityArray}
+		if orderingKey != "" {
+			transaction.OrderingKey = orderingKey
+		}
+
+		bs, err := edn.MarshalIndent(TransactBody{
+			Transactions: []Transaction{transaction}}, "", " ")
+
 		if err != nil {
 			return err
 		}
@@ -73,6 +87,10 @@ func CreateMessageSender(ctx EventContext) MessageSender {
 		defer resp.Body.Close()
 
 		return nil
+	}
+
+	messageSender.Transact = func(entities interface{}) error {
+		return messageSender.TransactOrdered(entities, "")
 	}
 
 	return messageSender
