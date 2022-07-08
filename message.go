@@ -17,100 +17,81 @@
 package skill
 
 import (
-	"cloud.google.com/go/pubsub"
-	"encoding/json"
-	"fmt"
+	"bytes"
+	"log"
+	"net/http"
 	"olympos.io/encoding/edn"
-	"os"
 	"reflect"
 )
 
 type Transact func(entities interface{}) error
+type TransactOrdered func(entities interface{}, orderingKey string) error
 
 type MessageSender struct {
-	Send     func(status Status) error
-	Transact Transact
+	Transact        Transact
+	TransactOrdered TransactOrdered
 }
 
-func CreateMessageSender(eventContext EventContext) (MessageSender, *pubsub.Client, error) {
+type Transaction struct {
+	Data        []interface{} `edn:"data"`
+	OrderingKey string        `edn:"ordering-key,omitempty"`
+}
+
+type TransactBody struct {
+	Transactions []Transaction `edn:"transactions"`
+}
+
+func CreateMessageSender(ctx EventContext) MessageSender {
 	messageSender := MessageSender{}
 
-	client, err := pubsub.NewClient(eventContext.Context, "atomist-skill-production")
-	if err != nil {
-		return messageSender, client, err
-	}
-	t := client.Topic(os.Getenv("ATOMIST_TOPIC"))
-	t.EnableMessageOrdering = true
-
-	messageSender.Send = func(status Status) error {
-		message := StatusHandlerResponse{
-			ApiVersion:    "1",
-			CorrelationId: eventContext.CorrelationId,
-			Team: Team{
-				Id: eventContext.WorkspaceId,
-			},
-			Skill:  eventContext.Skill,
-			Status: status,
-		}
-
-		encodedMessage, _ := json.Marshal(message)
-
-		publishResult := t.Publish(eventContext.Context, &pubsub.Message{
-			Data:        encodedMessage,
-			OrderingKey: eventContext.CorrelationId,
-		})
-
-		eventContext.Log.Printf("Sending message: %s", encodedMessage)
-		serverId, err := publishResult.Get(eventContext.Context)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		eventContext.Log.Printf("Sent message with '%s'", serverId)
-		return nil
-	}
-
-	messageSender.Transact = func(entities interface{}) error {
-		var entityArray any
+	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
+		var entityArray []interface{}
 		rt := reflect.TypeOf(entities)
 		switch rt.Kind() {
 		case reflect.Array:
 		case reflect.Slice:
-			entityArray = entities
+			entityArray = entities.([]interface{})
 		default:
 			entityArray = []any{entities}
 		}
 
-		bs, err := edn.Marshal(entityArray)
+		var transaction = Transaction{Data: entityArray}
+		if orderingKey != "" {
+			transaction.OrderingKey = orderingKey
+		}
+
+		bs, err := edn.MarshalIndent(TransactBody{
+			Transactions: []Transaction{transaction}}, "", " ")
+
 		if err != nil {
 			return err
 		}
 
-		message := TransactEntitiesResponse{
-			ApiVersion:    "1",
-			CorrelationId: eventContext.CorrelationId,
-			Team: Team{
-				Id: eventContext.WorkspaceId,
-			},
-			Type:     "facts_ingestion",
-			Entities: string(bs),
-		}
-		encodedMessage, _ := json.Marshal(message)
+		client := &http.Client{}
 
-		publishResult := t.Publish(eventContext.Context, &pubsub.Message{
-			Data:        encodedMessage,
-			OrderingKey: eventContext.CorrelationId,
-		})
+		ctx.Log.Printf("Transacting entities: %s", string(bs))
 
-		eventContext.Log.Printf("Transacting entities: %s", encodedMessage)
-		serverId, err := publishResult.Get(eventContext.Context)
+		req, err := http.NewRequest(http.MethodPost, ctx.Event.Urls.Transactions, bytes.NewBuffer(bs))
+		req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
+		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
-		eventContext.Log.Printf("Transacted entities with '%s'", serverId)
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != 202 {
+			log.Printf("Error transacting entities: %s", resp.Status)
+		}
+		defer resp.Body.Close()
+
 		return nil
 	}
 
-	return messageSender, client, nil
+	messageSender.Transact = func(entities interface{}) error {
+		return messageSender.TransactOrdered(entities, "")
+	}
+
+	return messageSender
 }

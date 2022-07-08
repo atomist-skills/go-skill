@@ -16,16 +16,11 @@
 
 package skill
 
-import (
-	"encoding/json"
-)
+import "olympos.io/encoding/edn"
 
-// Decode an incoming subscription payload into the concrete
-// mapping type
-func Decode[P interface{}](event map[string]json.RawMessage) P {
-	jsonbody, _ := json.Marshal(event)
+func Decode[P interface{}](event map[edn.Keyword]edn.RawMessage) P {
+	ednboby, _ := edn.Marshal(event)
 	var decoded P
-	json.Unmarshal(jsonbody, &decoded)
+	edn.Unmarshal(ednboby, &decoded)
 	return decoded
 }
- 

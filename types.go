@@ -18,89 +18,74 @@ package skill
 
 import (
 	"context"
-	"encoding/json"
-	"log"
+	"olympos.io/encoding/edn"
 )
 
-type Message struct {
-	Data      string `json:"data"`
-	MessageId string `json:"messageId"`
+type ParameterValue struct {
+	Name  string      `edn:"name"`
+	Value interface{} `edn:"value"`
 }
 
-type MessageEnvelope struct {
-	Message Message `json:"message"`
-}
-
-type Secret struct {
-	Uri   string `json:"uri"`
-	Value string `json:"value"`
+type ConfigurationIncoming struct {
+	Name       string           `edn:"name"`
+	parameters []ParameterValue `edn:"parameters"`
 }
 
 type SubscriptionIncoming struct {
-	Name   string                         `json:"name"`
-	Tx     int64                          `json:"tx"`
-	Result [][]map[string]json.RawMessage `json:"result"`
+	Name          string                             `edn:"name"`
+	Configuration ConfigurationIncoming              `edn:"configuration"`
+	AfterBasisT   int64                              `edn:"tx"`
+	Tx            int64                              `edn:"after-basis-t"`
+	Result        [][]map[edn.Keyword]edn.RawMessage `edn:"result"`
 }
 
-type WebhookIncoming struct {
-	ParameterName      string            `json:"parameter_name"`
-	ParameterNameValue string            `json:"parameter_name_value"`
-	Url                string            `json:"url"`
-	Headers            map[string]string `json:"headers"`
-	Body               string            `json:"body"`
+type Context struct {
+	Subscription SubscriptionIncoming `edn:"subscription"`
+}
+
+type Urls struct {
+	Execution    string `edn:"execution"`
+	Logs         string `edn:"logs"`
+	Transactions string `edn:"transactions"`
+	Query        string `edn:"query"`
 }
 
 type EventIncoming struct {
-	CorrelationId string               `json:"correlation_id"`
-	Skill         Skill                `json:"skill"`
-	Subscription  SubscriptionIncoming `json:"subscription"`
-	Webhook       WebhookIncoming      `json:"webhook"`
-	WorkspaceId   string               `json:"team_id"`
-	LogUrl        string               `json:"log_url"`
-	Secrets       []Secret             `json:"secrets"`
+	ExecutionId string      `edn:"execution-id"`
+	Skill       Skill       `edn:"skill"`
+	Type        edn.Keyword `edn:"type"`
+	WorkspaceId string      `edn:"workspace-id"`
+	Context     Context     `edn:"context"`
+	Urls        Urls        `edn:"urls"`
+	Token       string      `edn:"token"`
 }
 
 type Skill struct {
-	Id        string `json:"id"`
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-	Version   string `json:"version"`
+	Id        string `edn:"id"`
+	Namespace string `edn:"namespace"`
+	Name      string `edn:"name"`
+	Version   string `edn:"version"`
 }
+
+const (
+	Queued    edn.Keyword = "queued"
+	Running               = "running"
+	Completed             = "completed"
+	Retryable             = "retryable"
+	Failed                = "failed"
+)
 
 type Status struct {
-	Code       int8   `json:"code"`
-	Reason     string `json:"reason"`
-	Visibility string `json:"visibility,omitempty"`
-}
-
-type Team struct {
-	Id string `json:"id"`
-}
-
-type StatusHandlerResponse struct {
-	ApiVersion    string `json:"api_version"`
-	CorrelationId string `json:"correlation_id"`
-	Team          Team   `json:"team"`
-	Status        Status `json:"status"`
-	Skill         Skill  `json:"skill"`
-}
-
-type TransactEntitiesResponse struct {
-	ApiVersion    string `json:"api_version"`
-	CorrelationId string `json:"correlation_id"`
-	Team          Team   `json:"team"`
-	Entities      string `json:"entities"`
-	Type          string `json:"type"`
+	State  edn.Keyword `edn:"state"`
+	Reason string      `edn:"reason"`
 }
 
 type EventContext struct {
-	CorrelationId string
-	WorkspaceId   string
-	Skill         Skill
-	Event         EventIncoming
-	Log           *log.Logger
-	Transact      Transact
-	Context       context.Context
+	Event           EventIncoming
+	Log             Logger
+	Transact        Transact
+	TransactOrdered TransactOrdered
+	Context         context.Context
 }
 
 type EventHandler func(ctx EventContext) Status

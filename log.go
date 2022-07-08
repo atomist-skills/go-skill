@@ -17,29 +17,101 @@
 package skill
 
 import (
-	"cloud.google.com/go/logging"
-	"context"
+	"bytes"
+	"fmt"
 	"log"
+	"net/http"
+	"olympos.io/encoding/edn"
+	"runtime/debug"
+	"time"
 )
 
-func InitLogging(ctx context.Context, workspaceId string, correlationId string, messageId string, traceId string, name string, skill Skill) (*log.Logger, *logging.Client) {
-	client, err := logging.NewClient(ctx, "atomist-skill-production")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+const (
+	Debug edn.Keyword = "debug"
+	Info              = "info"
+	Warn              = "warn"
+	Error             = "error"
+)
+
+type Logger struct {
+	Print  func(msg string) error
+	Printf func(format string, a ...any) error
+}
+
+type LogEntry struct {
+	Timestamp string      `edn:"timestamp"`
+	Level     edn.Keyword `edn:"level"`
+	Text      string      `edn:"text"`
+}
+
+type LogBody struct {
+	Logs []LogEntry `edn:"logs"`
+}
+
+func CreateLogger(url string, token string) Logger {
+	logger := Logger{}
+
+	logger.Print = func(msg string) error {
+		// Print on console as well for now
+		log.Print(msg)
+
+		client := &http.Client{}
+
+		bs, err := edn.MarshalIndent(LogBody{Logs: []LogEntry{{
+			Timestamp: time.Now().Format(time.RFC3339),
+			Level:     Info,
+			Text:      msg,
+		}}}, "", " ")
+		if err != nil {
+			return err
+		}
+
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bs))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/edn")
+		if err != nil {
+			return err
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != 202 {
+			log.Printf("Error sending logs: %s\n%s", resp.Status, string(bs))
+		}
+
+		defer resp.Body.Close()
+
+		return nil
 	}
 
-	logName := "skills_logging"
-	logger := client.Logger(logName, logging.CommonLabels(map[string]string{
-		"correlation_id":  correlationId,
-		"workspace_id":    workspaceId,
-		"event_id":        messageId,
-		"trace_id":        traceId,
-		"name":            name,
-		"skill_id":        skill.Id,
-		"skill_namespace": skill.Namespace,
-		"skill_name":      skill.Name,
-		"skill_version":   skill.Version,
-	})).StandardLogger(logging.Info)
+	logger.Printf = func(format string, a ...any) error {
+		return logger.Print(fmt.Sprintf(format, a...))
+	}
 
-	return logger, client
+	debugInfo(logger)
+
+	return logger
+}
+
+func debugInfo(logger Logger) {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		goVersion := bi.GoVersion
+		path := bi.Main.Path
+		version := bi.Main.Version
+
+		var skillDep *debug.Module
+		for _, v := range bi.Deps {
+			if v.Path == "github.com/atomist-skills/go-skill" {
+				skillDep = v
+			}
+		}
+		var revision debug.BuildSetting
+		for _, v := range bi.Settings {
+			if v.Key == "vcs.revision" {
+				revision = v
+			}
+		}
+		logger.Printf("Starting http listener %s:%s (%s) %s:%s %s", path, version, revision.Value[0:7], skillDep.Path, skillDep.Version, goVersion)
+	}
 }

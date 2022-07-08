@@ -18,13 +18,11 @@ package skill
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"olympos.io/encoding/edn"
 	"os"
-	"time"
 )
 
 func Start(handlers Handlers) {
@@ -47,78 +45,52 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		start := time.Now().UnixMilli()
-		traceId := r.Header.Get("x-cloud-trace-context")
-
-		var env MessageEnvelope
-		err := json.NewDecoder(r.Body).Decode(&env)
-		if err != nil {
-			w.WriteHeader(201)
-			return
-		}
-
-		data, _ := base64.StdEncoding.DecodeString(env.Message.Data)
 		var event EventIncoming
-		err = json.Unmarshal(data, &event)
+		err := edn.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
 			w.WriteHeader(201)
 			return
 		}
 
-		var name string
-		if event.Webhook.ParameterName != "" {
-			name = event.Webhook.ParameterName
-		} else if event.Subscription.Name != "" {
-			name = event.Subscription.Name
-		}
+		name := event.Context.Subscription.Name
 
-		logger, loggingClient := InitLogging(ctx, event.WorkspaceId, event.CorrelationId, env.Message.MessageId, traceId, name, event.Skill)
-		logger.Println("Cloud Run execution started")
+		logger := CreateLogger(event.Urls.Logs, event.Token)
 
 		if handle, ok := handlers[name]; ok {
 			logger.Printf("Invoking event handler '%s'", name)
-			// logger.Printf("Incoming event message: ")
 
 			eventContext := EventContext{
-				CorrelationId: event.CorrelationId,
-				WorkspaceId:   event.WorkspaceId,
-				Skill:         event.Skill,
-				Event:         event,
-				Log:           logger,
-				Context:       ctx,
+				Event:   event,
+				Log:     logger,
+				Context: ctx,
 			}
 
-			messageSender, pubSubClient, err := CreateMessageSender(eventContext)
-			if err != nil {
-				logger.Printf("Error occurred creating message sender: %v", err)
-				w.WriteHeader(201)
-				return
-			}
+			messageSender := CreateMessageSender(eventContext)
 			eventContext.Transact = messageSender.Transact
+			eventContext.TransactOrdered = messageSender.TransactOrdered
 
 			defer func() {
 				if err := recover(); err != nil {
-					messageSender.Send(Status{
-						Code:   1,
-						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, event.Subscription.Name),
+					SendStatus(eventContext, Status{
+						State:  Failed,
+						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
 					})
 					w.WriteHeader(201)
 					logger.Printf("Unhandled error occurred: %v", err)
-					logger.Printf("Cloud Run execution took %d ms, finished with status: 'ok'", time.Now().UnixMilli()-start)
 					return
 				}
 			}()
 
+			SendStatus(eventContext, Status{
+				State: Running,
+			})
 			status := handle(eventContext)
-			messageSender.Send(status)
+			SendStatus(eventContext, status)
 			w.WriteHeader(201)
 
-			defer loggingClient.Close()
-			defer pubSubClient.Close()
 		} else {
-			log.Printf("Event handler '%s' not found", event.Subscription.Name)
+			logger.Printf("Event handler '%s' not found", name)
 			w.WriteHeader(201)
 		}
-		logger.Printf("Cloud Run execution took %d ms, finished with status: 'ok'", time.Now().UnixMilli()-start)
 	}
 }
