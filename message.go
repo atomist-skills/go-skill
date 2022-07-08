@@ -34,7 +34,7 @@ type MessageSender struct {
 
 type Transaction struct {
 	Data        []interface{} `edn:"data"`
-	OrderingKey string        `edn:"ordering-key"`
+	OrderingKey string        `edn:"ordering-key,omitempty"`
 }
 
 type TransactBody struct {

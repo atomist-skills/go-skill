@@ -24,7 +24,7 @@ import (
 )
 
 type StatusBody struct {
-	Status Status `edn:"status"`
+	Status Status `edn:"status,omitempty"`
 }
 
 func SendStatus(ctx EventContext, status Status) error {
