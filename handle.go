@@ -45,7 +45,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		var event EventIncoming
+		var event EventIncoming[any]
 		err := edn.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
 			w.WriteHeader(201)
@@ -59,7 +59,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		if handle, ok := handlers[name]; ok {
 			logger.Logf("Invoking event handler '%s'", name)
 
-			eventContext := EventContext{
+			eventContext := EventContext[any]{
 				Event:   event,
 				Log:     logger,
 				Context: ctx,
