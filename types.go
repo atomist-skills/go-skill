@@ -77,7 +77,7 @@ const (
 
 type Status struct {
 	State  edn.Keyword `edn:"state"`
-	Reason string      `edn:"reason"`
+	Reason string      `edn:"reason,omitempty"`
 }
 
 type EventContext struct {
