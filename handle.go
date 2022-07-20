@@ -26,7 +26,7 @@ import (
 )
 
 func Start(handlers Handlers) {
-	log.Print("Starting server...")
+	log.Print("Starting skill...")
 	http.HandleFunc("/", createHttpHandler(handlers))
 
 	port := os.Getenv("PORT")
@@ -42,9 +42,6 @@ func Start(handlers Handlers) {
 
 func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
 		var event EventIncoming
 		err := edn.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
@@ -59,19 +56,18 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		if handle, ok := handlers[name]; ok {
 			logger.Printf("Invoking event handler '%s'", name)
 
-			eventContext := EventContext{
+			request := RequestContext{
 				Event:   event,
 				Log:     logger,
-				Context: ctx,
 			}
 
-			messageSender := CreateMessageSender(eventContext)
-			eventContext.Transact = messageSender.Transact
-			eventContext.TransactOrdered = messageSender.TransactOrdered
+			messageSender := CreateMessageSender(request)
+			request.Transact = messageSender.Transact
+			request.TransactOrdered = messageSender.TransactOrdered
 
 			defer func() {
 				if err := recover(); err != nil {
-					SendStatus(eventContext, Status{
+					SendStatus(request, Status{
 						State:  Failed,
 						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
 					})
@@ -81,11 +77,11 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 				}
 			}()
 
-			SendStatus(eventContext, Status{
+			SendStatus(request, Status{
 				State: Running,
 			})
-			status := handle(eventContext)
-			SendStatus(eventContext, status)
+			status := handle(context.Background(), request)
+			SendStatus(request, status)
 			w.WriteHeader(201)
 
 		} else {

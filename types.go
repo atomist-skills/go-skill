@@ -80,14 +80,13 @@ type Status struct {
 	Reason string      `edn:"reason,omitempty"`
 }
 
-type EventContext struct {
+type RequestContext struct {
 	Event           EventIncoming
 	Log             Logger
 	Transact        Transact
 	TransactOrdered TransactOrdered
-	Context         context.Context
 }
 
-type EventHandler func(ctx EventContext) Status
+type EventHandler func(ctx context.Context, req RequestContext) Status
 
 type Handlers map[string]EventHandler

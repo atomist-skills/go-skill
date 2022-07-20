@@ -41,7 +41,7 @@ type TransactBody struct {
 	Transactions []Transaction `edn:"transactions"`
 }
 
-func CreateMessageSender(ctx EventContext) MessageSender {
+func CreateMessageSender(ctx RequestContext) MessageSender {
 	messageSender := MessageSender{}
 
 	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {

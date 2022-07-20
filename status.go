@@ -27,7 +27,7 @@ type StatusBody struct {
 	Status Status `edn:"status,omitempty"`
 }
 
-func SendStatus(ctx EventContext, status Status) error {
+func SendStatus(ctx RequestContext, status Status) error {
 	client := &http.Client{}
 
 	bs, err := edn.MarshalIndent(StatusBody{
