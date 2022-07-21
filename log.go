@@ -35,8 +35,17 @@ const (
 )
 
 type Logger struct {
-	Print  func(msg string) error
-	Printf func(format string, a ...any) error
+	Debug  func(msg string)
+	Debugf func(format string, a ...any)
+
+	Info  func(msg string)
+	Infof func(format string, a ...any)
+
+	Warn  func(msg string)
+	Warnf func(format string, a ...any)
+
+	Error  func(msg string)
+	Errorf func(format string, a ...any)
 }
 
 type LogEntry struct {
@@ -52,17 +61,17 @@ type LogBody struct {
 func createLogger(ctx context.Context, url string, token string) Logger {
 	logger := Logger{}
 
-	logger.Print = func(msg string) error {
+	var doLog = func (msg string, level edn.Keyword) {
 		// Print on console as well for now
 		log.Print(msg)
 
 		bs, err := edn.MarshalIndent(LogBody{Logs: []LogEntry{{
-			Timestamp: time.Now().Format(time.RFC3339),
-			Level:     Info,
+			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
+			Level:     level,
 			Text:      msg,
 		}}}, "", " ")
 		if err != nil {
-			return err
+			log.Panicf("Failed to marshal log message: %s", err)
 		}
 
 		client := &http.Client{}
@@ -70,23 +79,41 @@ func createLogger(ctx context.Context, url string, token string) Logger {
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
-			return err
+			log.Panicf("Failed to send log message: %s", err)
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			return err
+			log.Panicf("Failed to execute log http request: %s", err)
 		}
 		if resp.StatusCode != 202 {
-			log.Printf("Error sending logs: %s\n%s", resp.Status, string(bs))
+			log.Panicf("Error sending logs: %s\n%s", resp.Status, string(bs))
 		}
-
 		defer resp.Body.Close()
-
-		return nil
 	}
 
-	logger.Printf = func(format string, a ...any) error {
-		return logger.Print(fmt.Sprintf(format, a...))
+	logger.Debug = func(msg string) {
+		doLog(msg, Debug)
+	}
+	logger.Debugf = func(format string, a ...any) {
+		doLog(fmt.Sprintf(format, a...), Debug)
+	}
+	logger.Info = func(msg string) {
+		doLog(msg, Info)
+	}
+	logger.Infof = func(format string, a ...any) {
+		doLog(fmt.Sprintf(format, a...), Info)
+	}
+	logger.Warn = func(msg string) {
+		doLog(msg, Warn)
+	}
+	logger.Warnf = func(format string, a ...any) {
+		doLog(fmt.Sprintf(format, a...), Warn)
+	}
+	logger.Error = func(msg string) {
+		doLog(msg, Error)
+	}
+	logger.Errorf = func(format string, a ...any) {
+		doLog(fmt.Sprintf(format, a...), Error)
 	}
 
 	debugInfo(logger)
@@ -106,12 +133,14 @@ func debugInfo(logger Logger) {
 				skillDep = v
 			}
 		}
-		var revision debug.BuildSetting
+		var revision *debug.BuildSetting
 		for _, v := range bi.Settings {
 			if v.Key == "vcs.revision" {
-				revision = v
+				revision = &v
 			}
 		}
-		logger.Printf("Starting http listener %s:%s (%s) %s:%s %s", path, version, revision.Value[0:7], skillDep.Path, skillDep.Version, goVersion)
+		if skillDep != nil && revision != nil {
+			logger.Debugf("Starting http listener %s:%s (%s) %s:%s %s", path, version, (*revision).Value[0:7], skillDep.Path, skillDep.Version, goVersion)
+		}
 	}
 }

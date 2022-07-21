@@ -55,7 +55,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		logger := createLogger(ctx, event.Urls.Logs, event.Token)
 
 		if handle, ok := handlers[name]; ok {
-			logger.Printf("Invoking event handler '%s'", name)
+			logger.Infof("Invoking event handler '%s'", name)
 
 			req := RequestContext{
 				Event:   event,
@@ -73,7 +73,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
 					})
 					w.WriteHeader(201)
-					logger.Printf("Unhandled error occurred: %v", err)
+					logger.Errorf("Unhandled error occurred: %v", err)
 					return
 				}
 			}()
@@ -92,7 +92,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			w.WriteHeader(201)
 
 		} else {
-			logger.Printf("Event handler '%s' not found", name)
+			logger.Errorf("Event handler '%s' not found", name)
 			w.WriteHeader(201)
 		}
 	}

@@ -70,7 +70,7 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 
 		client := &http.Client{}
 
-		req.Log.Printf("Transacting entities: %s", string(bs))
+		req.Log.Debugf("Transacting entities: %s", string(bs))
 
 		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Event.Urls.Transactions, bytes.NewBuffer(bs))
 		httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)

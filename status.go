@@ -36,7 +36,7 @@ func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 		return err
 	}
 
-	req.Log.Printf("Sending status: %s", string(bs))
+	req.Log.Debugf("Sending status: %s", string(bs))
 	client := &http.Client{}
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, req.Event.Urls.Execution, bytes.NewBuffer(bs))
 	httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
