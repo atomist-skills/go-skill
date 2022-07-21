@@ -51,23 +51,24 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		name := event.Context.Subscription.Name
 
-		logger := CreateLogger(event.Urls.Logs, event.Token)
+		ctx := context.Background()
+		logger := createLogger(ctx, event.Urls.Logs, event.Token)
 
 		if handle, ok := handlers[name]; ok {
 			logger.Printf("Invoking event handler '%s'", name)
 
-			request := RequestContext{
+			req := RequestContext{
 				Event:   event,
 				Log:     logger,
 			}
 
-			messageSender := CreateMessageSender(request)
-			request.Transact = messageSender.Transact
-			request.TransactOrdered = messageSender.TransactOrdered
+			messageSender := createMessageSender(ctx, req)
+			req.Transact = messageSender.Transact
+			req.TransactOrdered = messageSender.TransactOrdered
 
 			defer func() {
 				if err := recover(); err != nil {
-					SendStatus(request, Status{
+					sendStatus(ctx, req, Status{
 						State:  Failed,
 						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
 					})
@@ -77,11 +78,17 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 				}
 			}()
 
-			SendStatus(request, Status{
+			err = sendStatus(ctx, req, Status{
 				State: Running,
 			})
-			status := handle(context.Background(), request)
-			SendStatus(request, status)
+			if err != nil {
+				log.Panicf("Failed to send status: %s", err)
+			}
+			status := handle(ctx, req)
+			err = sendStatus(ctx, req, status)
+			if err != nil {
+				log.Panicf("Failed to send status: %s", err)
+			}
 			w.WriteHeader(201)
 
 		} else {

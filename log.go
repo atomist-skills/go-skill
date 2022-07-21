@@ -18,6 +18,7 @@ package skill
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -48,14 +49,12 @@ type LogBody struct {
 	Logs []LogEntry `edn:"logs"`
 }
 
-func CreateLogger(url string, token string) Logger {
+func createLogger(ctx context.Context, url string, token string) Logger {
 	logger := Logger{}
 
 	logger.Print = func(msg string) error {
 		// Print on console as well for now
 		log.Print(msg)
-
-		client := &http.Client{}
 
 		bs, err := edn.MarshalIndent(LogBody{Logs: []LogEntry{{
 			Timestamp: time.Now().Format(time.RFC3339),
@@ -66,7 +65,8 @@ func CreateLogger(url string, token string) Logger {
 			return err
 		}
 
-		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bs))
+		client := &http.Client{}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(bs))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {

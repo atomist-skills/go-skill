@@ -18,6 +18,7 @@ package skill
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
@@ -27,9 +28,7 @@ type StatusBody struct {
 	Status Status `edn:"status,omitempty"`
 }
 
-func SendStatus(ctx RequestContext, status Status) error {
-	client := &http.Client{}
-
+func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 	bs, err := edn.MarshalIndent(StatusBody{
 		Status: status,
 	}, "", " ")
@@ -37,14 +36,15 @@ func SendStatus(ctx RequestContext, status Status) error {
 		return err
 	}
 
-	ctx.Log.Printf("Sending status: %s", string(bs))
-	req, err := http.NewRequest(http.MethodPatch, ctx.Event.Urls.Execution, bytes.NewBuffer(bs))
-	req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
-	req.Header.Set("Content-Type", "application/edn")
+	req.Log.Printf("Sending status: %s", string(bs))
+	client := &http.Client{}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, req.Event.Urls.Execution, bytes.NewBuffer(bs))
+	httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
+	httpReq.Header.Set("Content-Type", "application/edn")
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(req)
+	resp, err := client.Do(httpReq)
 	if err != nil {
 		return err
 	}
@@ -53,6 +53,5 @@ func SendStatus(ctx RequestContext, status Status) error {
 	}
 
 	defer resp.Body.Close()
-
 	return nil
 }

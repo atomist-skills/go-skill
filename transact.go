@@ -18,6 +18,7 @@ package skill
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"net/http"
 	"olympos.io/encoding/edn"
@@ -41,7 +42,7 @@ type TransactBody struct {
 	Transactions []Transaction `edn:"transactions"`
 }
 
-func CreateMessageSender(ctx RequestContext) MessageSender {
+func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
 	messageSender := MessageSender{}
 
 	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
@@ -69,15 +70,15 @@ func CreateMessageSender(ctx RequestContext) MessageSender {
 
 		client := &http.Client{}
 
-		ctx.Log.Printf("Transacting entities: %s", string(bs))
+		req.Log.Printf("Transacting entities: %s", string(bs))
 
-		req, err := http.NewRequest(http.MethodPost, ctx.Event.Urls.Transactions, bytes.NewBuffer(bs))
-		req.Header.Set("Authorization", "Bearer "+ctx.Event.Token)
-		req.Header.Set("Content-Type", "application/edn")
+		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Event.Urls.Transactions, bytes.NewBuffer(bs))
+		httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
+		httpReq.Header.Set("Content-Type", "application/edn")
 		if err != nil {
 			return err
 		}
-		resp, err := client.Do(req)
+		resp, err := client.Do(httpReq)
 		if err != nil {
 			return err
 		}
