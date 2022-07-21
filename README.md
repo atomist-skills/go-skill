@@ -110,12 +110,22 @@ err := req.Transact([]any{GitRepoEntity{
 
 ### Sending logs
 
-Sending logs to the skill platform to be viewed on `go.atomist.com`, the `RequestContext` provides two logging methods:
+To send logs to the skill platform to be viewed on `go.atomist.com`, the `RequestContext` provides access to a `Logger`
+struct:
 
 ```go
 type Logger struct {
-	Print  func(msg string) error
-	Printf func(format string, a ...any) error
+    Debug  func(msg string)
+    Debugf func(format string, a ...any)
+    
+    Info  func(msg string)
+    Infof func(format string, a ...any)
+    
+    Warn  func(msg string)
+    Warnf func(format string, a ...any)
+    
+    Error  func(msg string)
+    Errorf func(format string, a ...any)
 }
 ```
 
