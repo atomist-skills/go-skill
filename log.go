@@ -48,14 +48,14 @@ type Logger struct {
 	Errorf func(format string, a ...any)
 }
 
-type LogEntry struct {
-	Timestamp string      `edn:"timestamp"`
-	Level     edn.Keyword `edn:"level"`
-	Text      string      `edn:"text"`
+type logEntry struct {
+	timestamp string      `edn:"timestamp"`
+	level     edn.Keyword `edn:"level"`
+	text      string      `edn:"text"`
 }
 
-type LogBody struct {
-	Logs []LogEntry `edn:"logs"`
+type logBody struct {
+	logs []logEntry `edn:"logs"`
 }
 
 func createLogger(ctx context.Context, url string, token string) Logger {
@@ -65,10 +65,10 @@ func createLogger(ctx context.Context, url string, token string) Logger {
 		// Print on console as well for now
 		log.Print(msg)
 
-		bs, err := edn.MarshalIndent(LogBody{Logs: []LogEntry{{
-			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
-			Level:     level,
-			Text:      msg,
+		bs, err := edn.MarshalIndent(logBody{logs: []logEntry{{
+			timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
+			level:     level,
+			text:      msg,
 		}}}, "", " ")
 		if err != nil {
 			log.Panicf("Failed to marshal log message: %s", err)

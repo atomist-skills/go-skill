@@ -33,13 +33,13 @@ type MessageSender struct {
 	TransactOrdered TransactOrdered
 }
 
-type Transaction struct {
-	Data        []interface{} `edn:"data"`
-	OrderingKey string        `edn:"ordering-key,omitempty"`
+type transaction struct {
+	data        []interface{} `edn:"data"`
+	orderingKey string        `edn:"ordering-key,omitempty"`
 }
 
-type TransactBody struct {
-	Transactions []Transaction `edn:"transactions"`
+type transactBody struct {
+	transactions []transaction `edn:"transactions"`
 }
 
 func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
@@ -56,13 +56,13 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			entityArray = []any{entities}
 		}
 
-		var transaction = Transaction{Data: entityArray}
+		var transactions = transaction{data: entityArray}
 		if orderingKey != "" {
-			transaction.OrderingKey = orderingKey
+			transactions.orderingKey = orderingKey
 		}
 
-		bs, err := edn.MarshalIndent(TransactBody{
-			Transactions: []Transaction{transaction}}, "", " ")
+		bs, err := edn.MarshalIndent(transactBody{
+			transactions: []transaction{transactions}}, "", " ")
 
 		if err != nil {
 			return err

@@ -25,6 +25,7 @@ import (
 	"os"
 )
 
+// Start initiates startup of the skills given the provided Handlers
 func Start(handlers Handlers) {
 	log.Print("Starting skill...")
 	http.HandleFunc("/", createHttpHandler(handlers))
@@ -49,7 +50,12 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			return
 		}
 
-		name := event.Context.Subscription.Name
+		var name string
+		if event.Context.Subscription.Name != "" {
+			name = event.Context.Subscription.Name
+		} else if event.Context.Webhook.Name != "" {
+			name = event.Context.Webhook.Name
+		}
 
 		ctx := context.Background()
 		logger := createLogger(ctx, event.Urls.Logs, event.Token)
