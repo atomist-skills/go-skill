@@ -133,14 +133,14 @@ func debugInfo(logger Logger) {
 				skillDep = v
 			}
 		}
-		var revision *debug.BuildSetting
+		var revision string
 		for _, v := range bi.Settings {
 			if v.Key == "vcs.revision" {
-				revision = &v
+				revision = v.Value[0:7]
 			}
 		}
-		if skillDep != nil && revision != nil {
-			logger.Debugf("Starting http listener %s:%s (%s) %s:%s %s", path, version, (*revision).Value[0:7], skillDep.Path, skillDep.Version, goVersion)
+		if skillDep != nil && revision != "" {
+			logger.Debugf("Starting http listener %s:%s (%s) %s:%s %s", path, version, revision, skillDep.Path, skillDep.Version, goVersion)
 		}
 	}
 }
