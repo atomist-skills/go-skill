@@ -79,14 +79,14 @@ func createLogger(ctx context.Context, url string, token string) Logger {
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
-			log.Panicf("Failed to send log message: %s", err)
+			log.Printf("Failed to send log message: %s", err)
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Panicf("Failed to execute log http request: %s", err)
+			log.Printf("Failed to execute log http request: %s", err)
 		}
 		if resp.StatusCode != 202 {
-			log.Panicf("Error sending logs: %s\n%s", resp.Status, string(bs))
+			log.Printf("Error sending logs: %s\n%s", resp.Status, string(bs))
 		}
 		defer resp.Body.Close()
 	}
