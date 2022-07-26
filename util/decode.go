@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package skill
+package util
 
 import "olympos.io/encoding/edn"
 
