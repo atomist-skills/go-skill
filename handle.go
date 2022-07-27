@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"olympos.io/encoding/edn"
 	"os"
+	"time"
 )
 
 // Start initiates startup of the skills given the provided Handlers
@@ -64,18 +65,25 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		ctx := context.Background()
 		logger := createLogger(ctx, event.Urls.Logs, event.Token)
+		req := RequestContext{
+			Event:   event,
+			Log:     logger,
+		}
+
+		messageSender := createMessageSender(ctx, req)
+		req.Transact = messageSender.Transact
+		req.TransactOrdered = messageSender.TransactOrdered
+
+		start := time.Now()
+		logger.Debugf("Skill execution started")
+
+		defer func() {
+			logger.Debugf("Closing event handler '%s'", name)
+			logger.Debugf("Skill execution took $d ms ", time.Now().UnixMilli() - start.UnixMilli())
+		}()
 
 		if handle, ok := handlers[name]; ok {
-			logger.Infof("Invoking event handler '%s'", name)
-
-			req := RequestContext{
-				Event:   event,
-				Log:     logger,
-			}
-
-			messageSender := createMessageSender(ctx, req)
-			req.Transact = messageSender.Transact
-			req.TransactOrdered = messageSender.TransactOrdered
+			logger.Debugf("Invoking event handler '%s'", name)
 
 			defer func() {
 				if err := recover(); err != nil {
@@ -95,7 +103,9 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			if err != nil {
 				log.Panicf("Failed to send status: %s", err)
 			}
+
 			status := handle(ctx, req)
+
 			err = sendStatus(ctx, req, status)
 			if err != nil {
 				log.Panicf("Failed to send status: %s", err)
@@ -103,7 +113,10 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			w.WriteHeader(201)
 
 		} else {
-			logger.Errorf("Event handler '%s' not found", name)
+			err = sendStatus(ctx, req, Status{
+				State: Failed,
+				Reason: fmt.Sprintf("Event handler '%s' not found", name),
+			})
 			w.WriteHeader(201)
 		}
 	}
