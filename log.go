@@ -138,7 +138,7 @@ func debugInfo(logger Logger, event EventIncoming) {
 			}
 		}
 		if skillDep != nil && revision != "" {
-			logger.Debugf("Starting http listener %s/%s:%s '%s' (%s) %s:%s %s", event.Skill.Namespace, event.Skill.Name, event.Skill.Version, nameFromEvent(event), revision, skillDep.Path, skillDep.Version, goVersion)
+			logger.Debugf("Starting %s/%s:%s '%s' (%s) %s:%s %s", event.Skill.Namespace, event.Skill.Name, event.Skill.Version, nameFromEvent(event), revision, skillDep.Path, skillDep.Version, goVersion)
 		}
 	}
 }
