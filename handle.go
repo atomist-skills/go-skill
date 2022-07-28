@@ -68,7 +68,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		defer func() {
 			logger.Debugf("Closing event handler '%s'", name)
-			logger.Debugf("Skill execution took %d ms ", time.Now().UnixMilli() - start.UnixMilli())
+			logger.Debugf("Skill execution took %d ms", time.Now().UnixMilli() - start.UnixMilli())
 		}()
 
 		if handle, ok := handlers[name]; ok {
