@@ -21,35 +21,37 @@ import (
 	"olympos.io/encoding/edn"
 )
 
-type configuration struct {
+type Configuration struct {
 	Name       string `edn:"name"`
-	parameters []struct {
+	Parameters []struct {
 		Name  string      `edn:"name"`
 		Value interface{} `edn:"value"`
 	} `edn:"parameters"`
 }
 
+type Skill struct {
+	Id        string `edn:"id"`
+	Namespace string `edn:"namespace"`
+	Name      string `edn:"name"`
+	Version   string `edn:"version"`
+}
+
 type EventIncoming struct {
-	ExecutionId string `edn:"execution-id"`
-	Skill       struct {
-		Id        string `edn:"id"`
-		Namespace string `edn:"namespace"`
-		Name      string `edn:"name"`
-		Version   string `edn:"version"`
-	} `edn:"skill"`
+	ExecutionId string      `edn:"execution-id"`
+	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
 	WorkspaceId string      `edn:"workspace-id"`
 	Context     struct {
 		Subscription struct {
 			Name          string                             `edn:"name"`
-			Configuration configuration                      `edn:"configuration"`
+			Configuration Configuration                      `edn:"configuration"`
 			AfterBasisT   int64                              `edn:"tx"`
 			Tx            int64                              `edn:"after-basis-t"`
 			Result        [][]map[edn.Keyword]edn.RawMessage `edn:"result"`
 		} `edn:"subscription"`
 		Webhook struct {
 			Name          string        `edn:"name"`
-			Configuration configuration `edn:"configuration"`
+			Configuration Configuration `edn:"configuration"`
 			Request       struct {
 				Url     string            `edn:"url"`
 				Body    string            `edn:"body"`
