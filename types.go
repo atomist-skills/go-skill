@@ -21,12 +21,14 @@ import (
 	"olympos.io/encoding/edn"
 )
 
+type ParameterValue struct {
+	Name  string      `edn:"name"`
+	Value interface{} `edn:"value"`
+}
+
 type Configuration struct {
 	Name       string `edn:"name"`
-	Parameters []struct {
-		Name  string      `edn:"name"`
-		Value interface{} `edn:"value"`
-	} `edn:"parameters"`
+	Parameters []ParameterValue `edn:"parameters,omitempty"`
 }
 
 type Skill struct {
