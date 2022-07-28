@@ -52,6 +52,16 @@ func TestSuccessfulLogging(t *testing.T) {
 	}))
 	defer server.Close()
 
-	logger := createLogger(context.Background(), server.URL, "token")
+	logger := createLogger(context.Background(), EventIncoming{
+		Urls: struct {
+			Execution    string `edn:"execution"`
+			Logs         string `edn:"logs"`
+			Transactions string `edn:"transactions"`
+			Query        string `edn:"query"`
+		}{
+			Logs: server.URL,
+		},
+		Token: "token",
+	})
 	logger.Infof("This is a %s message", "test")
 }

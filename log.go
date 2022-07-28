@@ -58,7 +58,7 @@ type LogBody struct {
 	Logs []LogEntry `edn:"logs"`
 }
 
-func createLogger(ctx context.Context, url string, token string) Logger {
+func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
 	var doLog = func (msg string, level edn.Keyword) {
@@ -75,8 +75,8 @@ func createLogger(ctx context.Context, url string, token string) Logger {
 		}
 
 		client := &http.Client{}
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(bs))
-		req.Header.Set("Authorization", "Bearer "+token)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, event.Urls.Logs, bytes.NewBuffer(bs))
+		req.Header.Set("Authorization", "Bearer "+event.Token)
 		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
 			log.Printf("Failed to send log message: %s", err)
@@ -116,16 +116,14 @@ func createLogger(ctx context.Context, url string, token string) Logger {
 		doLog(fmt.Sprintf(format, a...), Error)
 	}
 
-	debugInfo(logger)
+	debugInfo(logger, event)
 
 	return logger
 }
 
-func debugInfo(logger Logger) {
+func debugInfo(logger Logger, event EventIncoming) {
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		goVersion := bi.GoVersion
-		path := bi.Main.Path
-		version := bi.Main.Version
 
 		var skillDep *debug.Module
 		for _, v := range bi.Deps {
@@ -140,7 +138,7 @@ func debugInfo(logger Logger) {
 			}
 		}
 		if skillDep != nil && revision != "" {
-			logger.Debugf("Starting http listener %s:%s (%s) %s:%s %s", path, version, revision, skillDep.Path, skillDep.Version, goVersion)
+			logger.Debugf("Starting http listener %s/%s:%s '%s' (%s) %s:%s %s", event.Skill.Namespace, event.Skill.Name, event.Skill.Version, nameFromEvent(event), revision, skillDep.Path, skillDep.Version, goVersion)
 		}
 	}
 }

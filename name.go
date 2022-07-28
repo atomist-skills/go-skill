@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package util
+package skill
 
-import "olympos.io/encoding/edn"
-
-// Decode returns a subscription result payload as a struct of specified
-// generic type P
-func Decode[P interface{}](event map[edn.Keyword]edn.RawMessage) P {
-	ednboby, _ := edn.Marshal(event)
-	var decoded P
-	edn.Unmarshal(ednboby, &decoded)
-	return decoded
+// nameFromEvent extracts the name of either a subscription or
+// webhook from the incoming payload
+func nameFromEvent(event EventIncoming) string {
+	var name string
+	if event.Context.Subscription.Name != "" {
+		name = event.Context.Subscription.Name
+	} else if event.Context.Webhook.Name != "" {
+		name = event.Context.Webhook.Name
+		for _, v := range event.Context.Webhook.Request.Tags {
+			if v.Name == "parameter-name" {
+				name = v.Value.(string)
+			}
+		}
+	}
+	return name
 }

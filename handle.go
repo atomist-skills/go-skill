@@ -51,20 +51,9 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			return
 		}
 
-		var name string
-		if event.Context.Subscription.Name != "" {
-			name = event.Context.Subscription.Name
-		} else if event.Context.Webhook.Name != "" {
-			name = event.Context.Webhook.Name
-			for _, v := range event.Context.Webhook.Request.Tags {
-				if v.Name == "parameter-name" {
-					name = v.Value.(string)
-				}
-			}
-		}
-
+		name := nameFromEvent(event)
 		ctx := context.Background()
-		logger := createLogger(ctx, event.Urls.Logs, event.Token)
+		logger := createLogger(ctx, event)
 		req := RequestContext{
 			Event:   event,
 			Log:     logger,
