@@ -43,7 +43,7 @@ type SimulateResult struct {
 	Results []struct {
 		ConfigurationName string                             `edn:"configuration-name"`
 		Subscription      string                             `edn:"subscription"`
-		Results           [][]map[edn.Keyword]edn.RawMessage `edn:"result"`
+		Results           [][]map[edn.Keyword]edn.RawMessage `edn:"results"`
 	} `edn:"results"`
 }
 
