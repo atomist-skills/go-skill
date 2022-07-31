@@ -27,7 +27,7 @@ type ParameterValue struct {
 }
 
 type Configuration struct {
-	Name       string `edn:"name"`
+	Name       string           `edn:"name"`
 	Parameters []ParameterValue `edn:"parameters,omitempty"`
 }
 
@@ -58,10 +58,7 @@ type EventIncoming struct {
 				Url     string            `edn:"url"`
 				Body    string            `edn:"body"`
 				Headers map[string]string `edn:"headers"`
-				Tags    []struct {
-					Name  string      `edn:"name"`
-					Value interface{} `edn:"value"`
-				} `edn:"tags"`
+				Tags    []ParameterValue  `edn:"tags"`
 			} `edn:"request"`
 		} `edn:"webhook"`
 	} `edn:"context"`
