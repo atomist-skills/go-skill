@@ -18,9 +18,10 @@ package skill
 
 import (
 	"log"
-	"olympos.io/encoding/edn"
 	"strings"
 	"testing"
+
+	"olympos.io/encoding/edn"
 )
 
 func TestUnmarshal(t *testing.T) {

@@ -22,9 +22,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"olympos.io/encoding/edn"
 	"runtime/debug"
 	"time"
+
+	"olympos.io/encoding/edn"
 )
 
 const (
@@ -61,7 +62,7 @@ type LogBody struct {
 func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
-	var doLog = func (msg string, level edn.Keyword) {
+	var doLog = func(msg string, level edn.Keyword) {
 		// Print on console as well for now
 		log.Print(msg)
 

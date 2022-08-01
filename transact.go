@@ -21,8 +21,9 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"olympos.io/encoding/edn"
 	"reflect"
+
+	"olympos.io/encoding/edn"
 )
 
 type Transact func(entities interface{}) error

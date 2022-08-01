@@ -20,8 +20,9 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"olympos.io/encoding/edn"
 	"testing"
+
+	"olympos.io/encoding/edn"
 )
 
 func TestSuccessfulLogging(t *testing.T) {

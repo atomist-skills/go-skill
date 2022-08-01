@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"olympos.io/encoding/edn"
 	"os"
 	"time"
+
+	"olympos.io/encoding/edn"
 )
 
 // Start initiates startup of the skills given the provided Handlers
@@ -55,8 +56,8 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		ctx := context.Background()
 		logger := createLogger(ctx, event)
 		req := RequestContext{
-			Event:   event,
-			Log:     logger,
+			Event: event,
+			Log:   logger,
 		}
 
 		messageSender := createMessageSender(ctx, req)
@@ -68,7 +69,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		defer func() {
 			logger.Debugf("Closing event handler '%s'", name)
-			logger.Debugf("Skill execution took %d ms", time.Now().UnixMilli() - start.UnixMilli())
+			logger.Debugf("Skill execution took %d ms", time.Now().UnixMilli()-start.UnixMilli())
 		}()
 
 		if handle, ok := handlers[name]; ok {
@@ -103,7 +104,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		} else {
 			err = sendStatus(ctx, req, Status{
-				State: Failed,
+				State:  Failed,
 				Reason: fmt.Sprintf("Event handler '%s' not found", name),
 			})
 			w.WriteHeader(201)
