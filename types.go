@@ -48,9 +48,12 @@ type EventIncoming struct {
 		Subscription struct {
 			Name          string                             `edn:"name"`
 			Configuration Configuration                      `edn:"configuration"`
-			AfterBasisT   int64                              `edn:"tx"`
-			Tx            int64                              `edn:"after-basis-t"`
 			Result        [][]map[edn.Keyword]edn.RawMessage `edn:"result"`
+			Metadata      struct {
+				AfterBasisT  int64  `edn:"tx"`
+				Tx           int64  `edn:"after-basis-t"`
+				ScheduleName string `edn:"schedule-name"`
+			} `edn:"metadata"`
 		} `edn:"subscription"`
 		Webhook struct {
 			Name          string        `edn:"name"`
