@@ -18,15 +18,16 @@ package test
 
 import (
 	"fmt"
-	"github.com/atomist-skills/go-skill"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"olympos.io/encoding/edn"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/atomist-skills/go-skill"
+	"olympos.io/encoding/edn"
 )
 
 type SimulateOptions struct {
