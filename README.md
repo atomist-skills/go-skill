@@ -6,21 +6,21 @@
 
 We suggest the following layout for a your skill Go project:
 
-| File/Directory         | Description                                                    |
-| ---------------------- | -------------------------------------------------------------- |                                                           
+| File/Directory         | Description                                                     |
+| ---------------------- | --------------------------------------------------------------- |
 | `datalog/subscription` | Put all `.edn` files defining subscriptions into this directory |
-| `datalog/schema`       | Place all `.edn` schema files into this directory              |
-| `go.mod`               | Go module descriptor                                           |
-| `main.go`              | Main entry point to start up the skill instance                | 
-| `Dockerfile`           | Dockerfile required to build your skill runtime container      |
-| `skill.yaml`           | Skill metadata                                                 |
+| `datalog/schema`       | Place all `.edn` schema files into this directory               |
+| `go.mod`               | Go module descriptor                                            |
+| `main.go`              | Main entry point to start up the skill instance                 |
+| `Dockerfile`           | Dockerfile required to build your skill runtime container       |
+| `skill.yaml`           | Skill metadata                                                  |
 
 ## Skill entrypoint
 
 The `main.go` is the main entry point into your Go application.
 
-In the `main` method you can start the skill instance passing a mapping of subscription
-or webhook names to handler functions. 
+In the `main` method you can start the skill instance passing a mapping of
+subscription or webhook names to handler functions.
 
 ```go
 package main
@@ -34,7 +34,7 @@ func main() {
 	})
 }
 ```
-                                       
+
 ## Handler function
 
 A function to handle incoming subscription or webhook events is defined as:
@@ -42,8 +42,9 @@ A function to handle incoming subscription or webhook events is defined as:
 ```go
 type EventHandler func(ctx context.Context, req RequestContext) Status
 ```
-                                                                  
-Here's an example `EventHandler` implementation from the [go-sample-skill](https://github.com/atomist-skills/go-sample-skill):
+
+Here's an example `EventHandler` implementation from the
+[go-sample-skill](https://github.com/atomist-skills/go-sample-skill):
 
 ```go
 // LogCommitSignature handles new commit signature entities as they are transacted into
@@ -64,8 +65,9 @@ func LogCommitSignature(ctx context.Context, req skill.RequestContext) skill.Sta
 
 ### `RequestContext`
 
-The passed `RequestContext` provides access to the incoming payload using the `Event` property as well 
-as properties to get access to a `Logger` instance and `transact` functions:
+The passed `RequestContext` provides access to the incoming payload using the
+`Event` property as well as properties to get access to a `Logger` instance and
+`transact` functions:
 
 ```go
 type RequestContext struct {
@@ -78,7 +80,8 @@ type RequestContext struct {
 
 ### Transacting entities
 
-Transacting new entities or facts can be done by calling `Transact` on the `RequestConext` passed the entities:
+Transacting new entities or facts can be done by calling `Transact` on the
+`RequestConext` passed the entities:
 
 ```go
 type GitRepoEntity struct {
@@ -110,20 +113,20 @@ err := req.Transact([]any{GitRepoEntity{
 
 ### Sending logs
 
-To send logs to the skill platform to be viewed on `go.atomist.com`, the `RequestContext` provides access to a `Logger`
-struct:
+To send logs to the skill platform to be viewed on `go.atomist.com`, the
+`RequestContext` provides access to a `Logger` struct:
 
 ```go
 type Logger struct {
     Debug  func(msg string)
     Debugf func(format string, a ...any)
-    
+
     Info  func(msg string)
     Infof func(format string, a ...any)
-    
+
     Warn  func(msg string)
     Warnf func(format string, a ...any)
-    
+
     Error  func(msg string)
     Errorf func(format string, a ...any)
 }
@@ -131,25 +134,26 @@ type Logger struct {
 
 ## Skill metadata
 
-The Skill metadata is defined in `skill.yaml` in the root of the project. 
+The Skill metadata is defined in `skill.yaml` in the root of the project.
 
 Here's an example of a minimum `skill.yaml` file:
 
 ```yaml
 skill:
-  apiVersion: v2
-  namespace: atomist
-  name: go-sample-skill
-  displayName: Go Sample Skill
-  description: Very basic sample skill written in Go
-  author: Atomist
-  license: Apache-2.0
+    apiVersion: v2
+    namespace: atomist
+    name: go-sample-skill
+    displayName: Go Sample Skill
+    description: Very basic sample skill written in Go
+    author: Atomist
+    license: Apache-2.0
 ```
 
 ## Building the runtime image
 
-The v2 version of the skill contract is only available to Docker-based skills. The following `Dockerfile` 
-is a good starting point for building a skill runtime image:
+The v2 version of the skill contract is only available to Docker-based skills.
+The following `Dockerfile` is a good starting point for building a skill runtime
+image:
 
 ```dockerfile
    # build stage
@@ -182,6 +186,5 @@ COPY --from=build /app/go-sample-skill .
 ENTRYPOINT ["/skill/go-sample-skill"]
 ```
 
-This `Dockerfile` uses a multi stage approach to build and test the Go project before 
-setting up the runtime container in the 2nd stage.
- 
+This `Dockerfile` uses a multi stage approach to build and test the Go project
+before setting up the runtime container in the 2nd stage.
