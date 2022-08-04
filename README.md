@@ -188,3 +188,4 @@ ENTRYPOINT ["/skill/go-sample-skill"]
 
 This `Dockerfile` uses a multi stage approach to build and test the Go project
 before setting up the runtime container in the 2nd stage.
+
