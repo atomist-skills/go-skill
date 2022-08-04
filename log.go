@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"olympos.io/encoding/edn"
@@ -120,6 +122,22 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 	debugInfo(logger, event)
 
 	return logger
+}
+
+// SanitizeEvent removes any sensitive information from the incoming payload structure
+func sanitizeEvent(incoming string) string {
+	re, _ := regexp.Compile(`:([a-z\.\/-]*)\s*"(.*?)"`)
+	res := re.FindAllStringSubmatchIndex(incoming, -1)
+	for i := range res {
+		name := incoming[res[i][2]:res[i][3]]
+		match, _ := regexp.MatchString("(?i)token|password|jwt|url|secret|authorization|key|cert|pass|user|address|email|pat", name)
+		if match {
+			value := incoming[res[i][4]:res[i][5]]
+			newValue := value[0:1] + strings.Repeat("*", len(value)-2) + value[len(value)-1:]
+			incoming = incoming[0:res[i][4]] + newValue + incoming[res[i][5]:]
+		}
+	}
+	return incoming
 }
 
 func debugInfo(logger Logger, event EventIncoming) {

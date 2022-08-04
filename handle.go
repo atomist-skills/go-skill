@@ -72,7 +72,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		start := time.Now()
 		logger.Debugf("Skill execution started")
-		logger.Debugf("Incoming event message: %s", body)
+		logger.Debugf("Incoming event message: %s", sanitizeEvent(body))
 
 		defer func() {
 			logger.Debugf("Closing event handler '%s'", name)
