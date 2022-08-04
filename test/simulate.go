@@ -68,7 +68,7 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
 	if err != nil {
 		t.Fatalf("Failed to load tx data: %s", err)
 	}
-	configuration, err := edn.MarshalIndent(options.Configuration, "", " ")
+	configuration, err := edn.MarshalPPrint(options.Configuration, nil)
 
 	payload := fmt.Sprintf(`{
  :skill {:id        "%s"

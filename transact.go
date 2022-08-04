@@ -62,8 +62,8 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			transactions.OrderingKey = orderingKey
 		}
 
-		bs, err := edn.MarshalIndent(TransactBody{
-			Transactions: []Transaction{transactions}}, "", " ")
+		bs, err := edn.MarshalPPrint(TransactBody{
+			Transactions: []Transaction{transactions}}, nil)
 
 		if err != nil {
 			return err

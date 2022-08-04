@@ -30,9 +30,9 @@ type StatusBody struct {
 }
 
 func sendStatus(ctx context.Context, req RequestContext, status Status) error {
-	bs, err := edn.MarshalIndent(StatusBody{
+	bs, err := edn.MarshalPPrint(StatusBody{
 		Status: status,
-	}, "", " ")
+	}, nil)
 	if err != nil {
 		return err
 	}

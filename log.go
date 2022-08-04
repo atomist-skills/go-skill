@@ -66,11 +66,11 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		// Print on console as well for now
 		log.Print(msg)
 
-		bs, err := edn.MarshalIndent(LogBody{Logs: []LogEntry{{
+		bs, err := edn.MarshalPPrint(LogBody{Logs: []LogEntry{{
 			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
 			Level:     level,
 			Text:      msg,
-		}}}, "", " ")
+		}}}, nil)
 		if err != nil {
 			log.Panicf("Failed to marshal log message: %s", err)
 		}

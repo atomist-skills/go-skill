@@ -19,9 +19,11 @@ package skill
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"olympos.io/encoding/edn"
@@ -45,8 +47,12 @@ func Start(handlers Handlers) {
 
 func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		buf := new(strings.Builder)
+		io.Copy(buf, r.Body)
+		body := buf.String()
+
 		var event EventIncoming
-		err := edn.NewDecoder(r.Body).Decode(&event)
+		err := edn.NewDecoder(strings.NewReader(body)).Decode(&event)
 		if err != nil {
 			w.WriteHeader(201)
 			return
@@ -66,6 +72,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		start := time.Now()
 		logger.Debugf("Skill execution started")
+		logger.Debugf("Incoming event message: %s", body)
 
 		defer func() {
 			logger.Debugf("Closing event handler '%s'", name)
