@@ -18,6 +18,7 @@ package util
 
 import (
 	"errors"
+
 	"github.com/atomist-skills/go-skill"
 )
 

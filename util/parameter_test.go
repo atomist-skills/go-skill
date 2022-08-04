@@ -17,9 +17,10 @@
 package util
 
 import (
-	"github.com/atomist-skills/go-skill"
 	"reflect"
 	"testing"
+
+	"github.com/atomist-skills/go-skill"
 )
 
 func TestGetParameterValueForString(t *testing.T) {
