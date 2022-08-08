@@ -26,6 +26,33 @@ import (
 	"olympos.io/encoding/edn"
 )
 
+// Entity models the required fields to transact an entity
+type Entity struct {
+	EntityType edn.Keyword `edn:"schema/entity-type"`
+	Entity     string      `edn:"schema/entity,omitempty"`
+}
+
+// EntityRefs find all entities by given entityType and returns their identity
+func EntityRefs(entities []interface{}, entityType string) []string {
+	entityRefs := make([]string, 0)
+	for i := range entities {
+		entity := entities[i]
+		if entity != nil && reflect.ValueOf(entity).FieldByName("EntityType").String() == entityType {
+			value := reflect.ValueOf(entity).FieldByName("Entity").Interface().(Entity)
+			entityRefs = append([]string{value.Entity}, entityRefs...)
+		}
+	}
+	return entityRefs
+}
+
+// EntityRef finds one entity by given entityType and returns its identity
+func EntityRef(entities []interface{}, entityType string) string {
+	if entityRefs := EntityRefs(entities, entityType); len(entityRefs) > 0 {
+		return entityRefs[0]
+	}
+	return ""
+}
+
 type Transact func(entities interface{}) error
 type TransactOrdered func(entities interface{}, orderingKey string) error
 
