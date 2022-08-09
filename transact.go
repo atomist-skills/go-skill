@@ -32,6 +32,13 @@ type Entity struct {
 	Entity     string      `edn:"schema/entity,omitempty"`
 }
 
+// ManyRef models a entity reference of cardinality many
+type ManyRef struct {
+	Add     []string `edn:"add,omitempty"`
+	Set     []string `edn:"set,omitempty"`
+	Retract []string `edn:"retract,omitempty"`
+}
+
 // EntityRefs find all entities by given entityType and returns their identity
 func EntityRefs(entities []interface{}, entityType string) []string {
 	entityRefs := make([]string, 0)
