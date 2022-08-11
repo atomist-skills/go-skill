@@ -19,6 +19,7 @@ package skill
 import (
 	"bytes"
 	"context"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"reflect"
@@ -41,7 +42,8 @@ type ManyRef struct {
 
 // Transaction collects entities
 type Transaction interface {
-	Add(entity interface{})
+	MakeEntity(entityType edn.Keyword, entityId ...string) Entity
+	AddEntity(entity interface{})
 	Entities() []interface{}
 }
 
@@ -49,14 +51,27 @@ type transaction struct {
 	entities []interface{}
 }
 
-// Add adds a new entity to this transaction
-func (t transaction) Add(entity interface{}) {
+// AddEntity adds a new entity to this transaction
+func (t transaction) AddEntity(entity interface{}) {
 	t.entities = append([]interface{}{entity}, t.entities...)
 }
 
 // Entities returns all current entities in this transaction
 func (t transaction) Entities() []interface{} {
 	return t.entities
+}
+
+// MakeEntity creates a new Entity struct populated with all values
+func (t transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Entity {
+	entity := Entity{
+		EntityType: entityType,
+	}
+	if len(entityId) == 0 {
+		entity.Entity = "$" + uuid.New().String()
+	} else {
+		entity.Entity = entityId[0]
+	}
+	return entity
 }
 
 // NewTransaction creates a new Transaction to record entities
