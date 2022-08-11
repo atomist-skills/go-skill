@@ -39,6 +39,33 @@ type ManyRef struct {
 	Retract []string `edn:"retract,omitempty"`
 }
 
+// Transaction collects entities
+type Transaction interface {
+	Add(entity interface{})
+	Entities() []interface{}
+}
+
+type transaction struct {
+	entities []interface{}
+}
+
+// Add adds a new entity to this transaction
+func (t transaction) Add(entity interface{}) {
+	t.entities = append([]interface{}{entity}, t.entities...)
+}
+
+// Entities returns all current entities in this transaction
+func (t transaction) Entities() []interface{} {
+	return t.entities
+}
+
+// NewTransaction creates a new Transaction to record entities
+func NewTransaction() Transaction {
+	return transaction{
+		entities: make([]interface{}, 0),
+	}
+}
+
 // EntityRefs find all entities by given entityType and returns their identity
 func EntityRefs(entities []interface{}, entityType string) []string {
 	entityRefs := make([]string, 0)
@@ -68,13 +95,13 @@ type MessageSender struct {
 	TransactOrdered TransactOrdered
 }
 
-type Transaction struct {
+type TransactionEntity struct {
 	Data        []interface{} `edn:"data"`
 	OrderingKey string        `edn:"ordering-key,omitempty"`
 }
 
-type TransactBody struct {
-	Transactions []Transaction `edn:"transactions"`
+type TransactEntityBody struct {
+	Transactions []TransactionEntity `edn:"transactions"`
 }
 
 func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
@@ -91,13 +118,13 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			entityArray = []any{entities}
 		}
 
-		var transactions = Transaction{Data: entityArray}
+		var transactions = TransactionEntity{Data: entityArray}
 		if orderingKey != "" {
 			transactions.OrderingKey = orderingKey
 		}
 
-		bs, err := edn.MarshalPPrint(TransactBody{
-			Transactions: []Transaction{transactions}}, nil)
+		bs, err := edn.MarshalPPrint(TransactEntityBody{
+			Transactions: []TransactionEntity{transactions}}, nil)
 
 		if err != nil {
 			return err
