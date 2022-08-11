@@ -43,7 +43,7 @@ type ManyRef struct {
 // Transaction collects entities
 type Transaction interface {
 	MakeEntity(entityType edn.Keyword, entityId ...string) Entity
-	AddEntity(entity interface{})
+	AddEntities(entities ...interface{})
 	EntityRefs(entityType string) []string
 	EntityRef(entityType string) string
 	Entities() []interface{}
@@ -53,9 +53,9 @@ type transaction struct {
 	entities []interface{}
 }
 
-// AddEntity adds a new entity to this transaction
-func (t *transaction) AddEntity(entity interface{}) {
-	t.entities = append([]interface{}{entity}, t.entities...)
+// AddEntities adds a new entity to this transaction
+func (t *transaction) AddEntities(entities ...interface{}) {
+	t.entities = append(entities, t.entities...)
 }
 
 // Entities returns all current entities in this transaction

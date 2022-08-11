@@ -50,11 +50,13 @@ func TestAddEntities(t *testing.T) {
 	entity2 := testEntity{
 		Entity: transaction.MakeEntity("bar"),
 	}
-	transaction.AddEntity(entity1)
-	transaction.AddEntity(entity2)
-
-	if len(transaction.Entities()) != 2 {
-		t.Errorf("Expected two entities")
+	entity3 := testEntity{
+		Entity: transaction.MakeEntity("bar"),
+	}
+	transaction.AddEntities(entity1, entity2)
+	transaction.AddEntities(entity3)
+	if len(transaction.Entities()) != 3 {
+		t.Errorf("Expected three entities")
 	}
 	refs := transaction.EntityRefs("foo")
 	if len(refs) != 1 {
