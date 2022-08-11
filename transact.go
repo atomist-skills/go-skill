@@ -44,6 +44,8 @@ type ManyRef struct {
 type Transaction interface {
 	MakeEntity(entityType edn.Keyword, entityId ...string) Entity
 	AddEntity(entity interface{})
+	EntityRefs(entityType string) []string
+	EntityRef(entityType string) string
 	Entities() []interface{}
 }
 
@@ -52,17 +54,17 @@ type transaction struct {
 }
 
 // AddEntity adds a new entity to this transaction
-func (t transaction) AddEntity(entity interface{}) {
+func (t *transaction) AddEntity(entity interface{}) {
 	t.entities = append([]interface{}{entity}, t.entities...)
 }
 
 // Entities returns all current entities in this transaction
-func (t transaction) Entities() []interface{} {
+func (t *transaction) Entities() []interface{} {
 	return t.entities
 }
 
 // MakeEntity creates a new Entity struct populated with all values
-func (t transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Entity {
+func (t *transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Entity {
 	entity := Entity{
 		EntityType: entityType,
 	}
@@ -74,9 +76,17 @@ func (t transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Enti
 	return entity
 }
 
+func (t *transaction) EntityRefs(entityType string) []string {
+	return EntityRefs(t.entities, entityType)
+}
+
+func (t *transaction) EntityRef(entityType string) string {
+	return EntityRef(t.entities, entityType)
+}
+
 // NewTransaction creates a new Transaction to record entities
 func NewTransaction() Transaction {
-	return transaction{
+	return &transaction{
 		entities: make([]interface{}, 0),
 	}
 }

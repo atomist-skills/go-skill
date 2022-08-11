@@ -25,7 +25,7 @@ type testEntity struct {
 
 func TestMakeWithoutId(t *testing.T) {
 	transaction := NewTransaction()
-	entity := transaction.Make("foo")
+	entity := transaction.MakeEntity("foo")
 	if entity.Entity == "" {
 		t.Errorf("Expected entity to be set")
 	}
@@ -36,8 +36,28 @@ func TestMakeWithoutId(t *testing.T) {
 
 func TestMakeWithId(t *testing.T) {
 	transaction := NewTransaction()
-	entity := transaction.Make("foo", "$repo")
+	entity := transaction.MakeEntity("foo", "$repo")
 	if entity.Entity != "$repo" {
 		t.Errorf("Expected entity to be set to $repo")
+	}
+}
+
+func TestAddEntities(t *testing.T) {
+	transaction := NewTransaction()
+	entity1 := testEntity{
+		Entity: transaction.MakeEntity("foo"),
+	}
+	entity2 := testEntity{
+		Entity: transaction.MakeEntity("bar"),
+	}
+	transaction.AddEntity(entity1)
+	transaction.AddEntity(entity2)
+
+	if len(transaction.Entities()) != 2 {
+		t.Errorf("Expected two entities")
+	}
+	refs := transaction.EntityRefs("foo")
+	if len(refs) != 1 {
+		t.Errorf("Expected one entity ref")
 	}
 }
