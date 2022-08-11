@@ -19,10 +19,11 @@ package skill
 import (
 	"bytes"
 	"context"
-	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"reflect"
+
+	"github.com/google/uuid"
 
 	"olympos.io/encoding/edn"
 )
