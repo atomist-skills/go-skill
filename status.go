@@ -19,9 +19,10 @@ package skill
 import (
 	"bytes"
 	"context"
-	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
+
+	"github.com/atomist-skills/go-skill/internal"
 
 	"olympos.io/encoding/edn"
 )

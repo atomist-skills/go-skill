@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
 	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/atomist-skills/go-skill/internal"
 
 	"olympos.io/encoding/edn"
 )
