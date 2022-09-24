@@ -76,11 +76,11 @@ type EventIncoming struct {
 }
 
 const (
-	Queued    edn.Keyword = "queued"
-	Running               = "running"
-	Completed             = "completed"
-	Retryable             = "retryable"
-	Failed                = "failed"
+	queued    edn.Keyword = "queued"
+	running   edn.Keyword = "running"
+	Completed edn.Keyword = "completed"
+	retryable edn.Keyword = "retryable"
+	Failed    edn.Keyword = "failed"
 )
 
 type Status struct {

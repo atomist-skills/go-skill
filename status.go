@@ -19,18 +19,29 @@ package skill
 import (
 	"bytes"
 	"context"
+	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
 
 	"olympos.io/encoding/edn"
 )
 
-type StatusBody struct {
-	Status Status `edn:"status,omitempty"`
+func NewCompletedStatus(reason string) Status {
+	return Status{
+		State:  Completed,
+		Reason: reason,
+	}
+}
+
+func NewFailedStatus(reason string) Status {
+	return Status{
+		State:  Failed,
+		Reason: reason,
+	}
 }
 
 func sendStatus(ctx context.Context, req RequestContext, status Status) error {
-	bs, err := edn.MarshalPPrint(StatusBody{
+	bs, err := edn.MarshalPPrint(internal.StatusBody{
 		Status: status,
 	}, nil)
 	if err != nil {

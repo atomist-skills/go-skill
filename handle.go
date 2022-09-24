@@ -95,7 +95,7 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			}()
 
 			err = sendStatus(ctx, req, Status{
-				State: Running,
+				State: running,
 			})
 			if err != nil {
 				log.Panicf("Failed to send status: %s", err)
