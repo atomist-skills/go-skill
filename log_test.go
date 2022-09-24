@@ -18,11 +18,12 @@ package skill
 
 import (
 	"context"
-	"github.com/atomist-skills/go-skill/internal"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/atomist-skills/go-skill/internal"
 
 	"olympos.io/encoding/edn"
 )
