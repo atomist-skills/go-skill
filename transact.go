@@ -19,6 +19,7 @@ package skill
 import (
 	"bytes"
 	"context"
+	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
 	"reflect"
@@ -121,15 +122,6 @@ type MessageSender struct {
 	TransactOrdered TransactOrdered
 }
 
-type TransactionEntity struct {
-	Data        []interface{} `edn:"data"`
-	OrderingKey string        `edn:"ordering-key,omitempty"`
-}
-
-type TransactEntityBody struct {
-	Transactions []TransactionEntity `edn:"transactions"`
-}
-
 func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
 	messageSender := MessageSender{}
 
@@ -144,13 +136,13 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			entityArray = []any{entities}
 		}
 
-		var transactions = TransactionEntity{Data: entityArray}
+		var transactions = internal.TransactionEntity{Data: entityArray}
 		if orderingKey != "" {
 			transactions.OrderingKey = orderingKey
 		}
 
-		bs, err := edn.MarshalPPrint(TransactEntityBody{
-			Transactions: []TransactionEntity{transactions}}, nil)
+		bs, err := edn.MarshalPPrint(internal.TransactEntityBody{
+			Transactions: []internal.TransactionEntity{transactions}}, nil)
 
 		if err != nil {
 			return err

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
 	"regexp"
@@ -28,13 +29,6 @@ import (
 	"time"
 
 	"olympos.io/encoding/edn"
-)
-
-const (
-	Debug edn.Keyword = "debug"
-	Info              = "info"
-	Warn              = "warn"
-	Error             = "error"
 )
 
 type Logger struct {
@@ -51,16 +45,6 @@ type Logger struct {
 	Errorf func(format string, a ...any)
 }
 
-type LogEntry struct {
-	Timestamp string      `edn:"timestamp"`
-	Level     edn.Keyword `edn:"level"`
-	Text      string      `edn:"text"`
-}
-
-type LogBody struct {
-	Logs []LogEntry `edn:"logs"`
-}
-
 func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
@@ -68,7 +52,7 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		// Print on console as well for now
 		log.Print(msg)
 
-		bs, err := edn.MarshalPPrint(LogBody{Logs: []LogEntry{{
+		bs, err := edn.MarshalPPrint(internal.LogBody{Logs: []internal.LogEntry{{
 			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
 			Level:     level,
 			Text:      msg,
@@ -95,28 +79,28 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 	}
 
 	logger.Debug = func(msg string) {
-		doLog(msg, Debug)
+		doLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
-		doLog(fmt.Sprintf(format, a...), Debug)
+		doLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
 	logger.Info = func(msg string) {
-		doLog(msg, Info)
+		doLog(msg, internal.Info)
 	}
 	logger.Infof = func(format string, a ...any) {
-		doLog(fmt.Sprintf(format, a...), Info)
+		doLog(fmt.Sprintf(format, a...), internal.Info)
 	}
 	logger.Warn = func(msg string) {
-		doLog(msg, Warn)
+		doLog(msg, internal.Warn)
 	}
 	logger.Warnf = func(format string, a ...any) {
-		doLog(fmt.Sprintf(format, a...), Warn)
+		doLog(fmt.Sprintf(format, a...), internal.Warn)
 	}
 	logger.Error = func(msg string) {
-		doLog(msg, Error)
+		doLog(msg, internal.Error)
 	}
 	logger.Errorf = func(format string, a ...any) {
-		doLog(fmt.Sprintf(format, a...), Error)
+		doLog(fmt.Sprintf(format, a...), internal.Error)
 	}
 
 	debugInfo(logger, event)
