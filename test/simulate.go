@@ -19,7 +19,6 @@ package test
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -56,15 +55,16 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
 		options.Token = os.Getenv("ATOMIST_API_KEY")
 	}
 	if options.Token == "" || options.WorkspaceId == "" {
+		t.Logf("Missing workspace and/or API key. Either pass both via options or set $ATOMIST_WORKSPACE and $ATOMIST_API_KEY")
 		t.Skip()
 	}
 
-	subscription, err := ioutil.ReadFile(options.Subscription)
+	subscription, err := os.ReadFile(options.Subscription)
 	subscriptionName := filepath.Base(options.Subscription)
 	if err != nil {
 		t.Fatalf("Failed to load subscription: %s", err)
 	}
-	txData, err := ioutil.ReadFile(options.TxData)
+	txData, err := os.ReadFile(options.TxData)
 	if err != nil {
 		t.Fatalf("Failed to load tx data: %s", err)
 	}
