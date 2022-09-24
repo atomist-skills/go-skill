@@ -63,3 +63,34 @@ func TestAddEntities(t *testing.T) {
 		t.Errorf("Expected one entity ref")
 	}
 }
+
+type Foo struct {
+	Entity
+	Bars []Bar `edn:"bars"`
+}
+
+type Bar struct {
+	Entity
+	Name string `edn:"name"`
+}
+
+func TestMakeTransactionWithNested(t *testing.T) {
+	transaction := NewTransaction()
+	foos := []any{Foo{
+		Entity: transaction.MakeEntity("foo"),
+		Bars: []Bar{{
+			Entity: transaction.MakeEntity("bar"),
+			Name:   "Murphy's",
+		}, {
+			Entity: transaction.MakeEntity("bar"),
+			Name:   "Irish Pub",
+		}},
+	}}
+	transactionEntity, err := makeTransaction(foos, "")
+	if err != nil {
+		t.Failed()
+	}
+	if len(transactionEntity.Data) != 3 {
+		t.Errorf("Incorrect number of entities in transaction")
+	}
+}

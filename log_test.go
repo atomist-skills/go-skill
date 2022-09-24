@@ -18,6 +18,7 @@ package skill
 
 import (
 	"context"
+	"github.com/atomist-skills/go-skill/internal"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,7 +37,7 @@ func TestSuccessfulLogging(t *testing.T) {
 		if contentTypeHeader != "application/edn" {
 			t.Errorf("Content-Type header is wrong: %s", contentTypeHeader)
 		}
-		var logEvent LogBody
+		var logEvent internal.LogBody
 		err := edn.NewDecoder(req.Body).Decode(&logEvent)
 		if err != nil {
 			t.Error(err)
@@ -47,7 +48,7 @@ func TestSuccessfulLogging(t *testing.T) {
 		if logEvent.Logs[0].Text != "This is a test message" {
 			t.Errorf("Invalid message: %s", logEvent.Logs[0].Text)
 		}
-		if logEvent.Logs[0].Level != Info {
+		if logEvent.Logs[0].Level != internal.Info {
 			t.Errorf("Invalid level: %s", logEvent.Logs[0].Level)
 		}
 		rw.WriteHeader(202)

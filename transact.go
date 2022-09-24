@@ -19,10 +19,12 @@ package skill
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -71,7 +73,8 @@ func (t *transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Ent
 		EntityType: entityType,
 	}
 	if len(entityId) == 0 {
-		entity.Entity = "$" + uuid.New().String()
+		parts := strings.Split(entityType.String()[1:len(entityType.String())], "/")
+		entity.Entity = fmt.Sprintf("$%s-%s", parts[len(parts)-1], uuid.New().String())
 	} else {
 		entity.Entity = entityId[0]
 	}
@@ -136,14 +139,10 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			entityArray = []any{entities}
 		}
 
-		var transactions = internal.TransactionEntity{Data: entityArray}
-		if orderingKey != "" {
-			transactions.OrderingKey = orderingKey
-		}
+		transactions, err := makeTransaction(entityArray, orderingKey)
 
-		bs, err := edn.MarshalPPrint(internal.TransactEntityBody{
-			Transactions: []internal.TransactionEntity{transactions}}, nil)
-
+		bs, err := edn.MarshalPPrint(internal.TransactionEntityBody{
+			Transactions: []internal.TransactionEntity{*transactions}}, nil)
 		if err != nil {
 			return err
 		}
@@ -153,11 +152,11 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 		req.Log.Debugf("Transacting entities: %s", string(bs))
 
 		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Event.Urls.Transactions, bytes.NewBuffer(bs))
-		httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
-		httpReq.Header.Set("Content-Type", "application/edn")
 		if err != nil {
 			return err
 		}
+		httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
+		httpReq.Header.Set("Content-Type", "application/edn")
 		resp, err := client.Do(httpReq)
 		if err != nil {
 			return err
@@ -175,4 +174,62 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 	}
 
 	return messageSender
+}
+
+func makeTransaction(entities []interface{}, orderingKey string) (*internal.TransactionEntity, error) {
+	body, err := edn.MarshalPPrint(entities, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var e []map[edn.Keyword]edn.RawMessage
+	err = edn.NewDecoder(bytes.NewReader(body)).Decode(&e)
+	if err != nil {
+		return nil, err
+	}
+
+	transactions := internal.TransactionEntity{Data: flattenEntities(e)}
+	if orderingKey != "" {
+		transactions.OrderingKey = orderingKey
+	}
+	return &transactions, nil
+}
+
+func flattenEntities(entities []map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.RawMessage {
+	fEntities := make([]map[edn.Keyword]edn.RawMessage, 0)
+	for i := range entities {
+		fEntities = append(fEntities, flattenEntity(entities[i])...)
+	}
+	return fEntities
+}
+
+func flattenEntity(entity map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.RawMessage {
+	entities := make([]map[edn.Keyword]edn.RawMessage, 0)
+	entities = append(entities, entity)
+
+	for k, v := range entity {
+		if !strings.HasPrefix(k.String(), ":schema/") {
+			// test single entity first
+			var n map[edn.Keyword]edn.RawMessage
+			err := edn.NewDecoder(bytes.NewReader(v)).Decode(&n)
+			if err == nil {
+				entity[k] = n["schema/entity"]
+				entities = append(entities, flattenEntity(n)...)
+				continue
+			}
+			// test array second
+			var a []map[edn.Keyword]edn.RawMessage
+			err = edn.NewDecoder(bytes.NewReader(v)).Decode(&a)
+			if err == nil {
+				refs := make([]string, len(a))
+				for i := range a {
+					refs[i] = string(a[i]["schema/entity"])
+					entities = append(entities, flattenEntity(a[i])...)
+				}
+				entity[k] = []byte(fmt.Sprintf("{:set [%s]}", strings.Join(refs, "")))
+			}
+		}
+	}
+
+	return entities
 }
