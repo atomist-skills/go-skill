@@ -20,11 +20,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/atomist-skills/go-skill/internal"
 	"log"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/atomist-skills/go-skill/internal"
 
 	"github.com/google/uuid"
 
