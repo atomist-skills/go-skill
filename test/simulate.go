@@ -55,7 +55,7 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
 		options.Token = os.Getenv("ATOMIST_API_KEY")
 	}
 	if options.Token == "" || options.WorkspaceId == "" {
-		t.Logf("Missing workspace and/or API key. Either pass both via options or set $ATOMIST_WORKSPACE and $ATOMIST_API_KEY")
+		t.Logf("Missing workspace and/or API key. Either pass both via options or set $ATOMIST_WORKSPACE and $ATOMIST_API_KEY. Skipping test...")
 		t.Skip()
 	}
 
