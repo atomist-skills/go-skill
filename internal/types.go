@@ -36,11 +36,11 @@ type LogBody struct {
 }
 
 type TransactionEntity struct {
-	Data        []interface{} `edn:"data"`
-	OrderingKey string        `edn:"ordering-key,omitempty"`
+	Data        []map[edn.Keyword]edn.RawMessage `edn:"data"`
+	OrderingKey string                           `edn:"ordering-key,omitempty"`
 }
 
-type TransactEntityBody struct {
+type TransactionEntityBody struct {
 	Transactions []TransactionEntity `edn:"transactions"`
 }
 
