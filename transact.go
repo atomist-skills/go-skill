@@ -127,7 +127,7 @@ type MessageSender struct {
 	TransactOrdered TransactOrdered
 }
 
-func HttpTransact(entities interface{}, workspace string, apikey string, ordered bool) error {
+func HttpTransact(entities interface{}, workspace string, apikey string, orderingKey string) error {
 	var entityArray []interface{}
 	rt := reflect.TypeOf(entities)
 	switch rt.Kind() {
@@ -138,7 +138,7 @@ func HttpTransact(entities interface{}, workspace string, apikey string, ordered
 		entityArray = []any{entities}
 	}
 
-	transactions, err := makeTransaction(entityArray, "")
+	transactions, err := makeTransaction(entityArray, orderingKey)
 	if err != nil {
 		return err
 	}
@@ -151,12 +151,18 @@ func HttpTransact(entities interface{}, workspace string, apikey string, ordered
 
 	message := internal.ResponseMessage{
 		ApiVersion:    "2",
-		CorrelationId: uuid.NewString(),
+		CorrelationId: "",
 		Team: internal.Team{
 			Id: workspace,
 		},
 		Type:     "facts_ingestion",
 		Entities: string(bs),
+	}
+
+	if orderingKey != "" {
+		message.CorrelationId = orderingKey
+	} else {
+		message.CorrelationId = uuid.NewString()
 	}
 
 	client := &http.Client{}
@@ -170,8 +176,8 @@ func HttpTransact(entities interface{}, workspace string, apikey string, ordered
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+apikey)
 	httpReq.Header.Set("x-atomist-correlation-id", message.CorrelationId)
-	if ordered {
-		httpReq.Header.Set("x-atomist-ordering-key:", message.CorrelationId)
+	if orderingKey != "" {
+		httpReq.Header.Set("x-atomist-ordering-key", message.CorrelationId)
 	}
 
 	resp, err := client.Do(httpReq)
