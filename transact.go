@@ -178,7 +178,7 @@ func HttpTransact(entities interface{}, orderingKey string, workspace string, ap
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 202 {
 		log.Printf("Error transacting entities: %s", resp.Status)
 	}
 	defer resp.Body.Close()
@@ -258,9 +258,25 @@ func makeTransaction(entities []interface{}, orderingKey string) (*internal.Tran
 
 func flattenEntities(entities []map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.RawMessage {
 	fEntities := make([]map[edn.Keyword]edn.RawMessage, 0)
-	for i := range entities {
-		fEntities = append(fEntities, flattenEntity(entities[i])...)
+	for _, e := range entities {
+		fEntities = append(fEntities, flattenEntity(e)...)
 	}
+
+	// make entity list unique by schema/entity
+	uEntities := make(map[string]map[edn.Keyword]edn.RawMessage, 0)
+	for _, e := range fEntities {
+		entity := string(e["schema/entity"])
+		if _, ok := uEntities[entity]; !ok {
+			uEntities[entity] = e
+		}
+	}
+
+	// collect the values
+	fEntities = make([]map[edn.Keyword]edn.RawMessage, 0)
+	for _, v := range uEntities {
+		fEntities = append(fEntities, v)
+	}
+
 	return fEntities
 }
 
@@ -274,8 +290,10 @@ func flattenEntity(entity map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.
 			var n map[edn.Keyword]edn.RawMessage
 			err := edn.NewDecoder(bytes.NewReader(v)).Decode(&n)
 			if err == nil {
-				entity[k] = n["schema/entity"]
-				entities = append(entities, flattenEntity(n)...)
+				if e, ok := n["schema/entity"]; ok {
+					entity[k] = e
+					entities = append(entities, flattenEntity(n)...)
+				}
 				continue
 			}
 			// test array second

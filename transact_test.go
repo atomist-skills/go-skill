@@ -66,7 +66,8 @@ func TestAddEntities(t *testing.T) {
 
 type Foo struct {
 	Entity
-	Bars []Bar `edn:"bars"`
+	Bars []Bar   `edn:"bars"`
+	Refs ManyRef `edn:"refs""`
 }
 
 type Bar struct {
@@ -85,6 +86,7 @@ func TestMakeTransactionWithNested(t *testing.T) {
 			Entity: transaction.MakeEntity("bar"),
 			Name:   "Irish Pub",
 		}},
+		Refs: ManyRef{Add: []string{"foo", "bar"}},
 	}}
 	transactionEntity, err := makeTransaction(foos, "")
 	if err != nil {
