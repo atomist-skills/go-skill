@@ -161,7 +161,7 @@ func HttpTransact(entities interface{}, orderingKey string, workspace string, ap
 
 	client := &http.Client{}
 
-	log.Printf("Transacting entities: %s", string(bs))
+	log.Printf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
 
 	httpReq, err := http.NewRequest(http.MethodPost, "https://api.atomist.com/skills/remote/"+workspace, bytes.NewBuffer(j))
