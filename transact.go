@@ -127,7 +127,7 @@ type MessageSender struct {
 	TransactOrdered TransactOrdered
 }
 
-func HttpTransact(entities interface{}, orderingKey string, workspace string, apikey string) error {
+func HttpTransact(entities interface{}, workspace string, apikey string, ordered bool) error {
 	var entityArray []interface{}
 	rt := reflect.TypeOf(entities)
 	switch rt.Kind() {
@@ -138,7 +138,7 @@ func HttpTransact(entities interface{}, orderingKey string, workspace string, ap
 		entityArray = []any{entities}
 	}
 
-	transactions, err := makeTransaction(entityArray, orderingKey)
+	transactions, err := makeTransaction(entityArray, "")
 	if err != nil {
 		return err
 	}
@@ -170,8 +170,8 @@ func HttpTransact(entities interface{}, orderingKey string, workspace string, ap
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+apikey)
 	httpReq.Header.Set("x-atomist-correlation-id", message.CorrelationId)
-	if orderingKey != "" {
-		httpReq.Header.Set("x-atomist-ordering-key:", orderingKey)
+	if ordered {
+		httpReq.Header.Set("x-atomist-ordering-key:", message.CorrelationId)
 	}
 
 	resp, err := client.Do(httpReq)
