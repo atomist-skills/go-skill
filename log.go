@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"runtime/debug"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/atomist-skills/go-skill/internal"
 
+	log "github.com/sirupsen/logrus"
 	"olympos.io/encoding/edn"
 )
 
@@ -50,9 +50,6 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
 	var doLog = func(msg string, level edn.Keyword) {
-		// Print on console as well for now
-		log.Print(msg)
-
 		bs, err := edn.MarshalPPrint(internal.LogBody{Logs: []internal.LogEntry{{
 			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
 			Level:     level,
@@ -67,40 +64,48 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		req.Header.Set("Authorization", "Bearer "+event.Token)
 		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
-			log.Printf("Failed to send log message: %s", err)
+			log.Warnf("Failed to send log message: %s", err)
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf("Failed to execute log http request: %s", err)
+			log.Warnf("Failed to execute log http request: %s", err)
 		}
 		if resp.StatusCode != 202 {
-			log.Printf("Error sending logs: %s\n%s", resp.Status, string(bs))
+			log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
 		}
 		defer resp.Body.Close()
 	}
 
 	logger.Debug = func(msg string) {
+		log.Debug(msg)
 		doLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
+		log.Debugf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
 	logger.Info = func(msg string) {
+		log.Info(msg)
 		doLog(msg, internal.Info)
 	}
 	logger.Infof = func(format string, a ...any) {
+		log.Infof(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Info)
 	}
 	logger.Warn = func(msg string) {
+		log.Warn(msg)
 		doLog(msg, internal.Warn)
 	}
 	logger.Warnf = func(format string, a ...any) {
+		log.Warnf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Warn)
 	}
 	logger.Error = func(msg string) {
+		log.Error(msg)
 		doLog(msg, internal.Error)
 	}
 	logger.Errorf = func(format string, a ...any) {
+		log.Errorf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Error)
 	}
 

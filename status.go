@@ -19,12 +19,13 @@ package skill
 import (
 	"bytes"
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/atomist-skills/go-skill/internal"
 
 	"olympos.io/encoding/edn"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func NewCompletedStatus(reason string) Status {
@@ -62,7 +63,7 @@ func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 		return err
 	}
 	if resp.StatusCode != 202 {
-		log.Printf("Error sending logs: %s", resp.Status)
+		log.Warnf("Error sending logs: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()

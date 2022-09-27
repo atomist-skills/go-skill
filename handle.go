@@ -20,18 +20,19 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"olympos.io/encoding/edn"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Start initiates startup of the skills given the provided Handlers
 func Start(handlers Handlers) {
-	log.Print("Starting skill...")
+	log.Info("Starting skill...")
 	http.HandleFunc("/", createHttpHandler(handlers))
 
 	port := os.Getenv("PORT")
@@ -39,7 +40,7 @@ func Start(handlers Handlers) {
 		port = "8080"
 	}
 
-	log.Printf("Listening on port %s", port)
+	log.Debugf("Listening on port %s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}

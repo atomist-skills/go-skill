@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"strings"
@@ -31,6 +30,8 @@ import (
 	"github.com/google/uuid"
 
 	"olympos.io/encoding/edn"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Entity models the required fields to transact an entity
@@ -167,7 +168,7 @@ func HttpTransact(entities interface{}, workspace string, apikey string, orderin
 
 	client := &http.Client{}
 
-	log.Printf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
+	log.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
 
 	httpReq, err := http.NewRequest(http.MethodPost, "https://api.atomist.com/skills/remote/"+workspace, bytes.NewBuffer(j))
@@ -185,7 +186,7 @@ func HttpTransact(entities interface{}, workspace string, apikey string, orderin
 		return err
 	}
 	if resp.StatusCode != 202 {
-		log.Printf("Error transacting entities: %s", resp.Status)
+		log.Warnf("Error transacting entities: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 
@@ -229,7 +230,7 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			return err
 		}
 		if resp.StatusCode != 202 {
-			log.Printf("Error transacting entities: %s", resp.Status)
+			log.Warnf("Error transacting entities: %s", resp.Status)
 		}
 		defer resp.Body.Close()
 
