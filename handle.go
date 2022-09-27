@@ -26,8 +26,6 @@ import (
 	"time"
 
 	"olympos.io/encoding/edn"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Start initiates startup of the skills given the provided Handlers

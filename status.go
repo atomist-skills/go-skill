@@ -24,8 +24,6 @@ import (
 	"github.com/atomist-skills/go-skill/internal"
 
 	"olympos.io/encoding/edn"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func NewCompletedStatus(reason string) Status {

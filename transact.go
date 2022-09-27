@@ -30,8 +30,6 @@ import (
 	"github.com/google/uuid"
 
 	"olympos.io/encoding/edn"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Entity models the required fields to transact an entity

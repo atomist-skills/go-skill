@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -28,9 +29,35 @@ import (
 
 	"github.com/atomist-skills/go-skill/internal"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"olympos.io/encoding/edn"
 )
+
+var (
+	log *logrus.Logger
+)
+
+func init() {
+	log = logrus.New()
+	log.SetOutput(os.Stdout)
+	if v, ok := os.LookupEnv("ATOMIST_LOG_LEVEL"); ok {
+		switch strings.ToLower(v) {
+		case "debug":
+			log.SetLevel(logrus.DebugLevel)
+		case "info":
+			log.SetLevel(logrus.InfoLevel)
+		case "warn":
+			log.SetLevel(logrus.WarnLevel)
+		}
+	}
+	log.SetFormatter(&logrus.TextFormatter{
+		DisableTimestamp: true,
+	})
+}
+
+func Log() *logrus.Logger {
+	return log
+}
 
 type Logger struct {
 	Debug  func(msg string)
