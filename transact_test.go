@@ -24,7 +24,7 @@ type testEntity struct {
 }
 
 func TestMakeWithoutId(t *testing.T) {
-	transaction := NewTransaction()
+	transaction := NewTransaction(RequestContext{}, false)
 	entity := transaction.MakeEntity("foo")
 	if entity.Entity == "" {
 		t.Errorf("Expected entity to be set")
@@ -35,7 +35,7 @@ func TestMakeWithoutId(t *testing.T) {
 }
 
 func TestMakeWithId(t *testing.T) {
-	transaction := NewTransaction()
+	transaction := NewTransaction(RequestContext{}, false)
 	entity := transaction.MakeEntity("foo", "$repo")
 	if entity.Entity != "$repo" {
 		t.Errorf("Expected entity to be set to $repo")
@@ -43,7 +43,7 @@ func TestMakeWithId(t *testing.T) {
 }
 
 func TestAddEntities(t *testing.T) {
-	transaction := NewTransaction()
+	transaction := NewTransaction(RequestContext{}, false)
 	entity1 := testEntity{
 		Entity: transaction.MakeEntity("foo"),
 	}
@@ -76,7 +76,7 @@ type Bar struct {
 }
 
 func TestMakeTransactionWithNested(t *testing.T) {
-	transaction := NewTransaction()
+	transaction := NewTransaction(RequestContext{}, false)
 	foos := []any{Foo{
 		Entity: transaction.MakeEntity("foo"),
 		Bars: []Bar{{

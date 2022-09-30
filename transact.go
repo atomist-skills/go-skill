@@ -51,12 +51,13 @@ type Transaction interface {
 	EntityRefs(entityType string) []string
 	EntityRef(entityType string) string
 	Entities() []interface{}
-	Transact(ordered bool) error
+	Transact() error
 }
 
 type transaction struct {
 	entities []interface{}
 	context  RequestContext
+	ordered  bool
 }
 
 // AddEntities adds a new entity to this transaction
@@ -71,8 +72,8 @@ func (t *transaction) Entities() []interface{} {
 
 // Transact triggers a transaction of the entities to the backend.
 // The recorded entities are not discarded in this transaction for further reference
-func (t *transaction) Transact(ordered bool) error {
-	if ordered {
+func (t *transaction) Transact() error {
+	if t.ordered {
 		return t.context.TransactOrdered(t.entities, t.context.Event.ExecutionId)
 	} else {
 		return t.context.Transact(t.entities)
@@ -102,7 +103,7 @@ func (t *transaction) EntityRef(entityType string) string {
 }
 
 // NewTransaction creates a new Transaction to record entities
-func NewTransaction(context RequestContext) Transaction {
+func NewTransaction(context RequestContext, ordered bool) Transaction {
 	return &transaction{
 		entities: make([]interface{}, 0),
 		context:  context,
