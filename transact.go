@@ -78,7 +78,7 @@ func (t *transaction) Transact() error {
 	if t.context.Event.Type != "" {
 		transactor = createMessageSender(t.ctx, t.context)
 	} else {
-		transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.WorkspaceId)
+		transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.Token)
 	}
 	if t.ordered {
 		return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
