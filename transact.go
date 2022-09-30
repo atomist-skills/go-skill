@@ -74,7 +74,12 @@ func (t *transaction) Entities() []interface{} {
 // Transact triggers a transaction of the entities to the backend.
 // The recorded entities are not discarded in this transaction for further reference
 func (t *transaction) Transact() error {
-	transactor := createMessageSender(t.ctx, t.context)
+	var transactor messageSender
+	if t.context.Event.Type != "" {
+		transactor = createMessageSender(t.ctx, t.context)
+	} else {
+		transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.WorkspaceId)
+	}
 	if t.ordered {
 		return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
 	} else {
