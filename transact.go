@@ -56,6 +56,7 @@ type Transaction interface {
 
 type transaction struct {
 	entities []interface{}
+	ctx      context.Context
 	context  RequestContext
 	ordered  bool
 }
@@ -73,10 +74,11 @@ func (t *transaction) Entities() []interface{} {
 // Transact triggers a transaction of the entities to the backend.
 // The recorded entities are not discarded in this transaction for further reference
 func (t *transaction) Transact() error {
+	transactor := createMessageSender(t.ctx, t.context)
 	if t.ordered {
-		return t.context.TransactOrdered(t.entities, t.context.Event.ExecutionId)
+		return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
 	} else {
-		return t.context.Transact(t.entities)
+		return transactor.Transact(t.entities)
 	}
 }
 
@@ -102,11 +104,13 @@ func (t *transaction) EntityRef(entityType string) string {
 	return EntityRef(t.entities, entityType)
 }
 
-// NewTransaction creates a new Transaction to record entities
-func NewTransaction(context RequestContext, ordered bool) Transaction {
+// newTransaction creates a new Transaction to record entities
+func newTransaction(ctx context.Context, context RequestContext, ordered bool) Transaction {
 	return &transaction{
 		entities: make([]interface{}, 0),
+		ctx:      ctx,
 		context:  context,
+		ordered:  ordered,
 	}
 }
 
@@ -134,13 +138,13 @@ func EntityRef(entities []interface{}, entityType string) string {
 type Transact func(entities interface{}) error
 type TransactOrdered func(entities interface{}, orderingKey string) error
 
-type MessageSender struct {
+type messageSender struct {
 	Transact        Transact
 	TransactOrdered TransactOrdered
 }
 
-func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
-	messageSender := MessageSender{}
+func createMessageSender(ctx context.Context, req RequestContext) messageSender {
+	messageSender := messageSender{}
 
 	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
 		var entityArray []interface{}

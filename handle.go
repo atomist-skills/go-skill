@@ -63,11 +63,9 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		req := RequestContext{
 			Event: event,
 			Log:   logger,
-		}
 
-		messageSender := createMessageSender(ctx, req)
-		req.Transact = messageSender.Transact
-		req.TransactOrdered = messageSender.TransactOrdered
+			ctx: ctx,
+		}
 
 		start := time.Now()
 		logger.Debugf("Skill execution started")

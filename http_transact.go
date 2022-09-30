@@ -26,8 +26,8 @@ import (
 	"reflect"
 )
 
-func CreateHttpMessageSender(workspace string, apikey string) MessageSender {
-	return MessageSender{
+func CreateHttpMessageSender(workspace string, apikey string) messageSender {
+	return messageSender{
 		Transact: func(entities interface{}) error {
 			return httpTransact(entities, "", workspace, apikey)
 		},
