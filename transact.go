@@ -19,7 +19,6 @@ package skill
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -137,71 +136,6 @@ type TransactOrdered func(entities interface{}, orderingKey string) error
 type MessageSender struct {
 	Transact        Transact
 	TransactOrdered TransactOrdered
-}
-
-func HttpTransact(entities interface{}, workspace string, apikey string, orderingKey string) error {
-	var entityArray []interface{}
-	rt := reflect.TypeOf(entities)
-	switch rt.Kind() {
-	case reflect.Array:
-	case reflect.Slice:
-		entityArray = entities.([]interface{})
-	default:
-		entityArray = []any{entities}
-	}
-
-	transactions, err := makeTransaction(entityArray, orderingKey)
-	if err != nil {
-		return err
-	}
-
-	flattenedEntities := transactions.Data
-	bs, err := edn.MarshalPPrint(flattenedEntities, nil)
-	if err != nil {
-		return err
-	}
-
-	message := internal.ResponseMessage{
-		ApiVersion:    "2",
-		CorrelationId: "",
-		Team: internal.Team{
-			Id: workspace,
-		},
-		Type:     "facts_ingestion",
-		Entities: string(bs),
-	}
-
-	if orderingKey != "" {
-		message.CorrelationId = orderingKey
-	} else {
-		message.CorrelationId = uuid.NewString()
-	}
-
-	client := &http.Client{}
-
-	Log.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
-	j, _ := json.MarshalIndent(message, "", "  ")
-
-	httpReq, err := http.NewRequest(http.MethodPost, "https://api.atomist.com/skills/remote/"+workspace, bytes.NewBuffer(j))
-	if err != nil {
-		return err
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+apikey)
-	httpReq.Header.Set("x-atomist-correlation-id", message.CorrelationId)
-	if orderingKey != "" {
-		httpReq.Header.Set("x-atomist-ordering-key", message.CorrelationId)
-	}
-
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 202 {
-		Log.Warnf("Error transacting entities: %s", resp.Status)
-	}
-	defer resp.Body.Close()
-
-	return nil
 }
 
 func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
