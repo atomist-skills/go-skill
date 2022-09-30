@@ -46,10 +46,10 @@ type ManyRef struct {
 
 // Transaction collects entities
 type Transaction interface {
-	AddEntities(entities ...interface{})
+	Ordered() Transaction
+	AddEntities(entities ...interface{}) Transaction
 	EntityRefs(entityType string) []string
 	EntityRef(entityType string) string
-	Entities() []interface{}
 	Transact() error
 }
 
@@ -60,14 +60,16 @@ type transaction struct {
 	ordered  bool
 }
 
-// AddEntities adds a new entity to this transaction
-func (t *transaction) AddEntities(entities ...interface{}) {
-	t.entities = append(entities, t.entities...)
+// Ordered makes this ordered
+func (t *transaction) Ordered() Transaction {
+	t.ordered = true
+	return t
 }
 
-// Entities returns all current entities in this transaction
-func (t *transaction) Entities() []interface{} {
-	return t.entities
+// AddEntities adds a new entity to this transaction
+func (t *transaction) AddEntities(entities ...interface{}) Transaction {
+	t.entities = append(entities, t.entities...)
+	return t
 }
 
 // Transact triggers a transaction of the entities to the backend.
@@ -125,12 +127,12 @@ func (t *transaction) EntityRef(entityType string) string {
 }
 
 // newTransaction creates a new Transaction to record entities
-func newTransaction(ctx context.Context, context RequestContext, ordered bool) Transaction {
+func newTransaction(ctx context.Context, context RequestContext) Transaction {
 	return &transaction{
 		entities: make([]interface{}, 0),
 		ctx:      ctx,
 		context:  context,
-		ordered:  ordered,
+		ordered:  false,
 	}
 }
 

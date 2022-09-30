@@ -95,8 +95,8 @@ type RequestContext struct {
 	ctx context.Context
 }
 
-func (r *RequestContext) NewTransaction(ordered bool) Transaction {
-	return newTransaction(r.ctx, *r, ordered)
+func (r *RequestContext) NewTransaction() Transaction {
+	return newTransaction(r.ctx, *r)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status

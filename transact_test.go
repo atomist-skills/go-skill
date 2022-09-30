@@ -49,16 +49,12 @@ func TestMakeWithId(t *testing.T) {
 	}
 }
 
-func TestAddEntities(t *testing.T) {
-	transaction := newTransaction(context.TODO(), RequestContext{}, false)
+func TestEntityRefs(t *testing.T) {
+	transaction := newTransaction(context.TODO(), RequestContext{})
 	entity1 := MakeEntity(Foo{}, "foo")
 	entity2 := MakeEntity(Bar{}, "bar")
 	entity3 := MakeEntity(Bar{})
-	transaction.AddEntities(entity1, entity2)
-	transaction.AddEntities(entity3)
-	if len(transaction.Entities()) != 3 {
-		t.Errorf("Expected three entities")
-	}
+	transaction.AddEntities(entity1, entity2).AddEntities(entity3)
 	refs := transaction.EntityRefs("foo")
 	if len(refs) != 1 {
 		t.Errorf("Expected one entity ref")
