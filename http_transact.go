@@ -19,11 +19,12 @@ package skill
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"reflect"
+
 	"github.com/atomist-skills/go-skill/internal"
 	"github.com/google/uuid"
-	"net/http"
 	"olympos.io/encoding/edn"
-	"reflect"
 )
 
 func createHttpMessageSender(workspace string, apikey string) messageSender {

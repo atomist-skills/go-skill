@@ -16,43 +16,44 @@
 
 package skill
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
-type testEntity struct {
-	Entity
-	Foo string
+type Foo struct {
+	Entity `entity-type:"foo"`
+	Bars   []Bar   `edn:"bars"`
+	Refs   ManyRef `edn:"refs""`
+}
+
+type Bar struct {
+	Entity `entity-type:"bar"`
+	Name   string `edn:"name"`
 }
 
 func TestMakeWithoutId(t *testing.T) {
-	transaction := NewTransaction(RequestContext{}, false)
-	entity := transaction.MakeEntity("foo")
-	if entity.Entity == "" {
+	entity := MakeEntity(Foo{})
+	if entity.Entity.Entity == "" {
 		t.Errorf("Expected entity to be set")
 	}
-	if entity.Entity[0:1] != "$" {
+	if entity.Entity.Entity[0:1] != "$" {
 		t.Errorf("Expected entity should start with $")
 	}
 }
 
 func TestMakeWithId(t *testing.T) {
-	transaction := NewTransaction(RequestContext{}, false)
-	entity := transaction.MakeEntity("foo", "$repo")
-	if entity.Entity != "$repo" {
+	entity := MakeEntity(Foo{}, "$repo")
+	if entity.Entity.Entity != "$repo" {
 		t.Errorf("Expected entity to be set to $repo")
 	}
 }
 
 func TestAddEntities(t *testing.T) {
-	transaction := NewTransaction(RequestContext{}, false)
-	entity1 := testEntity{
-		Entity: transaction.MakeEntity("foo"),
-	}
-	entity2 := testEntity{
-		Entity: transaction.MakeEntity("bar"),
-	}
-	entity3 := testEntity{
-		Entity: transaction.MakeEntity("bar"),
-	}
+	transaction := newTransaction(context.TODO(), RequestContext{}, false)
+	entity1 := MakeEntity(Foo{}, "foo")
+	entity2 := MakeEntity(Bar{}, "bar")
+	entity3 := MakeEntity(Bar{})
 	transaction.AddEntities(entity1, entity2)
 	transaction.AddEntities(entity3)
 	if len(transaction.Entities()) != 3 {
@@ -64,30 +65,15 @@ func TestAddEntities(t *testing.T) {
 	}
 }
 
-type Foo struct {
-	Entity
-	Bars []Bar   `edn:"bars"`
-	Refs ManyRef `edn:"refs""`
-}
-
-type Bar struct {
-	Entity
-	Name string `edn:"name"`
-}
-
 func TestMakeTransactionWithNested(t *testing.T) {
-	transaction := NewTransaction(RequestContext{}, false)
-	foos := []any{Foo{
-		Entity: transaction.MakeEntity("foo"),
-		Bars: []Bar{{
-			Entity: transaction.MakeEntity("bar"),
-			Name:   "Murphy's",
-		}, {
-			Entity: transaction.MakeEntity("bar"),
-			Name:   "Irish Pub",
-		}},
+	foos := []any{MakeEntity(Foo{
+		Bars: []Bar{MakeEntity(Bar{
+			Name: "Murphy's",
+		}), MakeEntity(Bar{
+			Name: "Irish Pub",
+		})},
 		Refs: ManyRef{Add: []string{"foo", "bar"}},
-	}}
+	})}
 	transactionEntity, err := makeTransaction(foos, "")
 	if err != nil {
 		t.Failed()

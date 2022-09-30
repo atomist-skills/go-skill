@@ -46,7 +46,6 @@ type ManyRef struct {
 
 // Transaction collects entities
 type Transaction interface {
-	MakeEntity(entityType edn.Keyword, entityId ...string) Entity
 	AddEntities(entities ...interface{})
 	EntityRefs(entityType string) []string
 	EntityRef(entityType string) string
@@ -88,17 +87,33 @@ func (t *transaction) Transact() error {
 }
 
 // MakeEntity creates a new Entity struct populated with all values
-func (t *transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Entity {
-	entity := Entity{
-		EntityType: entityType,
+func MakeEntity[E interface{}](value E, entityId ...string) E {
+	reflectValue := reflect.ValueOf(value)
+	var field reflect.StructField
+	if reflectValue.Kind() == reflect.Ptr {
+		field, _ = reflect.TypeOf(value).Elem().FieldByName("Entity")
+	} else {
+		field, _ = reflect.TypeOf(value).FieldByName("Entity")
 	}
+	entityType := field.Tag.Get("entity-type")
+
+	entity := Entity{
+		EntityType: edn.Keyword(entityType),
+	}
+	parts := strings.Split(entityType, "/")
 	if len(entityId) == 0 {
-		parts := strings.Split(entityType.String()[1:len(entityType.String())], "/")
 		entity.Entity = fmt.Sprintf("$%s-%s", parts[len(parts)-1], uuid.New().String())
 	} else {
 		entity.Entity = entityId[0]
 	}
-	return entity
+
+	if reflectValue.Kind() == reflect.Ptr {
+		reflectValue.Elem().FieldByName("Entity").Set(reflect.ValueOf(entity))
+	} else {
+		reflect.ValueOf(&value).Elem().FieldByName("Entity").Set(reflect.ValueOf(entity))
+	}
+
+	return value
 }
 
 func (t *transaction) EntityRefs(entityType string) []string {
