@@ -61,7 +61,7 @@ func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 		return err
 	}
 	if resp.StatusCode != 202 {
-		log.Warnf("Error sending logs: %s", resp.Status)
+		Log.Warnf("Error sending logs: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()

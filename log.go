@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -34,29 +35,27 @@ import (
 )
 
 var (
-	log *logrus.Logger
+	Log *logrus.Logger
 )
 
 func init() {
-	log = logrus.New()
-	log.SetOutput(os.Stdout)
+	Log = logrus.New()
+	Log.SetOutput(os.Stdout)
 	if v, ok := os.LookupEnv("ATOMIST_LOG_LEVEL"); ok {
 		switch strings.ToLower(v) {
 		case "debug":
-			log.SetLevel(logrus.DebugLevel)
+			Log.SetLevel(logrus.DebugLevel)
 		case "info":
-			log.SetLevel(logrus.InfoLevel)
+			Log.SetLevel(logrus.InfoLevel)
 		case "warn":
-			log.SetLevel(logrus.WarnLevel)
+			Log.SetLevel(logrus.WarnLevel)
 		}
 	}
-	log.SetFormatter(&logrus.TextFormatter{
+	Log.SetFormatter(&logrus.TextFormatter{
 		DisableTimestamp: true,
+		PadLevelText:     true,
+		ForceColors:      runtime.GOOS != "windows",
 	})
-}
-
-func Log() *logrus.Logger {
-	return log
 }
 
 type Logger struct {
@@ -83,7 +82,7 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 			Text:      msg,
 		}}}, nil)
 		if err != nil {
-			log.Panicf("Failed to marshal log message: %s", err)
+			Log.Panicf("Failed to marshal log message: %s", err)
 		}
 
 		client := &http.Client{}
@@ -91,48 +90,48 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		req.Header.Set("Authorization", "Bearer "+event.Token)
 		req.Header.Set("Content-Type", "application/edn")
 		if err != nil {
-			log.Warnf("Failed to send log message: %s", err)
+			Log.Warnf("Failed to send log message: %s", err)
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Warnf("Failed to execute log http request: %s", err)
+			Log.Warnf("Failed to execute log http request: %s", err)
 		}
 		if resp.StatusCode != 202 {
-			log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
+			Log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
 		}
 		defer resp.Body.Close()
 	}
 
 	logger.Debug = func(msg string) {
-		log.Debug(msg)
+		Log.Debug(msg)
 		doLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
-		log.Debugf(format, a...)
+		Log.Debugf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
 	logger.Info = func(msg string) {
-		log.Info(msg)
+		Log.Info(msg)
 		doLog(msg, internal.Info)
 	}
 	logger.Infof = func(format string, a ...any) {
-		log.Infof(format, a...)
+		Log.Infof(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Info)
 	}
 	logger.Warn = func(msg string) {
-		log.Warn(msg)
+		Log.Warn(msg)
 		doLog(msg, internal.Warn)
 	}
 	logger.Warnf = func(format string, a ...any) {
-		log.Warnf(format, a...)
+		Log.Warnf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Warn)
 	}
 	logger.Error = func(msg string) {
-		log.Error(msg)
+		Log.Error(msg)
 		doLog(msg, internal.Error)
 	}
 	logger.Errorf = func(format string, a ...any) {
-		log.Errorf(format, a...)
+		Log.Errorf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Error)
 	}
 

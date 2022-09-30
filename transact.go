@@ -38,7 +38,7 @@ type Entity struct {
 	Entity     string      `edn:"schema/entity,omitempty"`
 }
 
-// ManyRef models a entity reference of cardinality many
+// ManyRef models an entity reference of cardinality many
 type ManyRef struct {
 	Add     []string `edn:"add,omitempty"`
 	Set     []string `edn:"set,omitempty"`
@@ -52,10 +52,12 @@ type Transaction interface {
 	EntityRefs(entityType string) []string
 	EntityRef(entityType string) string
 	Entities() []interface{}
+	Transact(ordered bool) error
 }
 
 type transaction struct {
 	entities []interface{}
+	context  RequestContext
 }
 
 // AddEntities adds a new entity to this transaction
@@ -66,6 +68,16 @@ func (t *transaction) AddEntities(entities ...interface{}) {
 // Entities returns all current entities in this transaction
 func (t *transaction) Entities() []interface{} {
 	return t.entities
+}
+
+// Transact triggers a transaction of the entities to the backend.
+// The recorded entities are not discarded in this transaction for further reference
+func (t *transaction) Transact(ordered bool) error {
+	if ordered {
+		return t.context.TransactOrdered(t.entities, t.context.Event.ExecutionId)
+	} else {
+		return t.context.Transact(t.entities)
+	}
 }
 
 // MakeEntity creates a new Entity struct populated with all values
@@ -91,9 +103,10 @@ func (t *transaction) EntityRef(entityType string) string {
 }
 
 // NewTransaction creates a new Transaction to record entities
-func NewTransaction() Transaction {
+func NewTransaction(context RequestContext) Transaction {
 	return &transaction{
 		entities: make([]interface{}, 0),
+		context:  context,
 	}
 }
 
@@ -166,7 +179,7 @@ func HttpTransact(entities interface{}, workspace string, apikey string, orderin
 
 	client := &http.Client{}
 
-	log.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
+	Log.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
 
 	httpReq, err := http.NewRequest(http.MethodPost, "https://api.atomist.com/skills/remote/"+workspace, bytes.NewBuffer(j))
@@ -184,7 +197,7 @@ func HttpTransact(entities interface{}, workspace string, apikey string, orderin
 		return err
 	}
 	if resp.StatusCode != 202 {
-		log.Warnf("Error transacting entities: %s", resp.Status)
+		Log.Warnf("Error transacting entities: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 
@@ -228,7 +241,7 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			return err
 		}
 		if resp.StatusCode != 202 {
-			log.Warnf("Error transacting entities: %s", resp.Status)
+			Log.Warnf("Error transacting entities: %s", resp.Status)
 		}
 		defer resp.Body.Close()
 

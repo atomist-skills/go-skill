@@ -17,7 +17,6 @@
 package skill
 
 import (
-	"log"
 	"strings"
 	"testing"
 
@@ -33,6 +32,6 @@ func TestUnmarshal(t *testing.T) {
 		t.Errorf("Expected on_push as name")
 	}
 	if err != nil {
-		log.Fatalln(err)
+		t.Failed()
 	}
 }
