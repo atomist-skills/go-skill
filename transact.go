@@ -90,7 +90,7 @@ func (t *transaction) Transact() error {
 	}
 }
 
-// MakeEntity creates a new Entity struct populated with all values
+// MakeEntity creates a new Entity struct populated with entity-type and a unique entity identifier
 func MakeEntity[E interface{}](value E, entityId ...string) E {
 	reflectValue := reflect.ValueOf(value)
 	var field reflect.StructField
