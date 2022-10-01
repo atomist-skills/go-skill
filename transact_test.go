@@ -24,6 +24,7 @@ import (
 type Foo struct {
 	Entity `entity-type:"foo"`
 	Bars   []Bar   `edn:"bars"`
+	Bar    Bar     `edn:"bar"`
 	Refs   ManyRef `edn:"refs""`
 }
 
@@ -51,10 +52,11 @@ func TestMakeWithId(t *testing.T) {
 
 func TestEntityRefs(t *testing.T) {
 	transaction := newTransaction(context.TODO(), RequestContext{})
-	entity1 := MakeEntity(Foo{}, "foo")
-	entity2 := MakeEntity(Bar{}, "bar")
-	entity3 := MakeEntity(Bar{})
-	transaction.AddEntities(entity1, entity2).AddEntities(entity3)
+	entity1 := Bar{Name: "1"}
+	entity2 := Bar{Name: "2"}
+	entity3 := Bar{Name: "3"}
+	entity4 := Foo{}
+	transaction.AddEntities(entity1, entity2).AddEntities(entity3, entity4)
 	refs := transaction.EntityRefs("foo")
 	if len(refs) != 1 {
 		t.Errorf("Expected one entity ref")
@@ -62,19 +64,29 @@ func TestEntityRefs(t *testing.T) {
 }
 
 func TestMakeTransactionWithNested(t *testing.T) {
-	foos := []any{MakeEntity(Foo{
-		Bars: []Bar{MakeEntity(Bar{
+	foos := []any{Foo{
+		Bars: []Bar{{
 			Name: "Murphy's",
-		}), MakeEntity(Bar{
+		}, {
 			Name: "Irish Pub",
-		})},
+		}},
+		Bar: Bar{
+			Entity: Entity{
+				EntityType: "barbar",
+				Entity:     "test",
+			},
+			Name: "Kanapee",
+		},
 		Refs: ManyRef{Add: []string{"foo", "bar"}},
-	})}
-	transactionEntity, err := makeTransaction(foos, "")
+	}}
+
+	newFoos := makeEntity(foos)
+
+	transactionEntity, err := makeTransaction(newFoos.([]interface{}), "")
 	if err != nil {
 		t.Failed()
 	}
-	if len(transactionEntity.Data) != 3 {
+	if len(transactionEntity.Data) != 4 {
 		t.Errorf("Incorrect number of entities in transaction")
 	}
 }

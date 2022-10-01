@@ -68,7 +68,9 @@ func (t *transaction) Ordered() Transaction {
 
 // AddEntities adds a new entity to this transaction
 func (t *transaction) AddEntities(entities ...interface{}) Transaction {
-	t.entities = append(entities, t.entities...)
+	for _, e := range entities {
+		t.entities = append(t.entities, makeEntity(e))
+	}
 	return t
 }
 
@@ -102,8 +104,8 @@ func MakeEntity[E interface{}](value E, entityId ...string) E {
 	entity := Entity{
 		EntityType: edn.Keyword(entityType),
 	}
-	parts := strings.Split(entityType, "/")
 	if len(entityId) == 0 {
+		parts := strings.Split(entityType, "/")
 		entity.Entity = fmt.Sprintf("$%s-%s", parts[len(parts)-1], uuid.New().String())
 	} else {
 		entity.Entity = entityId[0]
@@ -290,4 +292,67 @@ func flattenEntity(entity map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.
 	}
 
 	return entities
+}
+
+func makeEntity(x interface{}) interface{} {
+	// Starting value must be a pointer.
+	v := reflect.ValueOf(x)
+	if v.Kind() != reflect.Ptr {
+		v = reflect.ValueOf(&x)
+	}
+	setEntityValues(v, "")
+	return x
+}
+
+func setEntityValues(v reflect.Value, entityType string) {
+	switch v.Kind() {
+	case reflect.Ptr:
+		if v.IsZero() {
+			return
+		}
+		setEntityValues(v.Elem(), entityType)
+	case reflect.Interface:
+		if v.IsZero() {
+			return
+		}
+		iv := v.Elem()
+		switch iv.Kind() {
+		case reflect.Slice, reflect.Ptr:
+			setEntityValues(iv, entityType)
+		case reflect.Struct, reflect.Array:
+			// Copy required for modification.
+			copy := reflect.New(iv.Type()).Elem()
+			copy.Set(iv)
+			setEntityValues(copy, entityType)
+			v.Set(copy)
+		}
+	case reflect.Struct:
+		t := v.Type()
+		for i := 0; i < t.NumField(); i++ {
+			sf := t.Field(i)
+			fv := v.Field(i)
+			if sf.Name == "Entity" {
+				if entityType != "" {
+					if fv.String() == "" {
+						parts := strings.Split(entityType, "/")
+						fv.Set(reflect.ValueOf(fmt.Sprintf("$%s-%s", parts[len(parts)-1], uuid.New().String())))
+					}
+				} else {
+					entityType := sf.Tag.Get("entity-type")
+					setEntityValues(fv, entityType)
+				}
+			} else if sf.Name == "EntityType" {
+				if fv.Interface().(edn.Keyword) == "" {
+					fv.Set(reflect.ValueOf(edn.Keyword(entityType)))
+				}
+			} else {
+				setEntityValues(fv, entityType)
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < v.Len(); i++ {
+			setEntityValues(v.Index(i), entityType)
+		}
+
+	}
 }
