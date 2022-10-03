@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"strings"
@@ -38,7 +37,7 @@ type Entity struct {
 	Entity     string      `edn:"schema/entity,omitempty"`
 }
 
-// ManyRef models a entity reference of cardinality many
+// ManyRef models an entity reference of cardinality many
 type ManyRef struct {
 	Add     []string `edn:"add,omitempty"`
 	Set     []string `edn:"set,omitempty"`
@@ -47,39 +46,78 @@ type ManyRef struct {
 
 // Transaction collects entities
 type Transaction interface {
-	MakeEntity(entityType edn.Keyword, entityId ...string) Entity
-	AddEntities(entities ...interface{})
+	Ordered() Transaction
+	AddEntities(entities ...interface{}) Transaction
 	EntityRefs(entityType string) []string
 	EntityRef(entityType string) string
-	Entities() []interface{}
+	Transact() error
 }
 
 type transaction struct {
 	entities []interface{}
+	ctx      context.Context
+	context  RequestContext
+	ordered  bool
+}
+
+// Ordered makes this ordered
+func (t *transaction) Ordered() Transaction {
+	t.ordered = true
+	return t
 }
 
 // AddEntities adds a new entity to this transaction
-func (t *transaction) AddEntities(entities ...interface{}) {
-	t.entities = append(entities, t.entities...)
+func (t *transaction) AddEntities(entities ...interface{}) Transaction {
+	for _, e := range entities {
+		t.entities = append(t.entities, makeEntity(e))
+	}
+	return t
 }
 
-// Entities returns all current entities in this transaction
-func (t *transaction) Entities() []interface{} {
-	return t.entities
+// Transact triggers a transaction of the entities to the backend.
+// The recorded entities are not discarded in this transaction for further reference
+func (t *transaction) Transact() error {
+	var transactor messageSender
+	if t.context.Event.Type != "" {
+		transactor = createMessageSender(t.ctx, t.context)
+	} else {
+		transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.Token)
+	}
+	if t.ordered {
+		return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
+	} else {
+		return transactor.Transact(t.entities)
+	}
 }
 
-// MakeEntity creates a new Entity struct populated with all values
-func (t *transaction) MakeEntity(entityType edn.Keyword, entityId ...string) Entity {
+// MakeEntity creates a new Entity struct populated with entity-type and a unique entity identifier
+func MakeEntity[E interface{}](value E, entityId ...string) E {
+	reflectValue := reflect.ValueOf(value)
+	var field reflect.StructField
+	if reflectValue.Kind() == reflect.Ptr {
+		field, _ = reflect.TypeOf(value).Elem().FieldByName("Entity")
+	} else {
+		field, _ = reflect.TypeOf(value).FieldByName("Entity")
+	}
+	entityType := field.Tag.Get("entity-type")
+
 	entity := Entity{
-		EntityType: entityType,
+		EntityType: edn.Keyword(entityType),
 	}
 	if len(entityId) == 0 {
-		parts := strings.Split(entityType.String()[1:len(entityType.String())], "/")
+		parts := strings.Split(entityType, "/")
 		entity.Entity = fmt.Sprintf("$%s-%s", parts[len(parts)-1], uuid.New().String())
 	} else {
 		entity.Entity = entityId[0]
 	}
-	return entity
+
+	if reflectValue.Kind() == reflect.Ptr {
+		reflectValue.Elem().FieldByName("Entity").Set(reflect.ValueOf(entity))
+	} else {
+		reflect.ValueOf(&value).Elem().FieldByName("Entity").Set(reflect.ValueOf(entity))
+	}
+
+	return value
 }
 
 func (t *transaction) EntityRefs(entityType string) []string {
@@ -90,10 +128,13 @@ func (t *transaction) EntityRef(entityType string) string {
 	return EntityRef(t.entities, entityType)
 }
 
-// NewTransaction creates a new Transaction to record entities
-func NewTransaction() Transaction {
+// newTransaction creates a new Transaction to record entities
+func newTransaction(ctx context.Context, context RequestContext) Transaction {
 	return &transaction{
 		entities: make([]interface{}, 0),
+		ctx:      ctx,
+		context:  context,
+		ordered:  false,
 	}
 }
 
@@ -121,13 +162,13 @@ func EntityRef(entities []interface{}, entityType string) string {
 type Transact func(entities interface{}) error
 type TransactOrdered func(entities interface{}, orderingKey string) error
 
-type MessageSender struct {
+type messageSender struct {
 	Transact        Transact
 	TransactOrdered TransactOrdered
 }
 
-func createMessageSender(ctx context.Context, req RequestContext) MessageSender {
-	messageSender := MessageSender{}
+func createMessageSender(ctx context.Context, req RequestContext) messageSender {
+	messageSender := messageSender{}
 
 	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
 		var entityArray []interface{}
@@ -163,7 +204,7 @@ func createMessageSender(ctx context.Context, req RequestContext) MessageSender 
 			return err
 		}
 		if resp.StatusCode != 202 {
-			log.Printf("Error transacting entities: %s", resp.Status)
+			Log.Warnf("Error transacting entities: %s", resp.Status)
 		}
 		defer resp.Body.Close()
 
@@ -198,9 +239,25 @@ func makeTransaction(entities []interface{}, orderingKey string) (*internal.Tran
 
 func flattenEntities(entities []map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.RawMessage {
 	fEntities := make([]map[edn.Keyword]edn.RawMessage, 0)
-	for i := range entities {
-		fEntities = append(fEntities, flattenEntity(entities[i])...)
+	for _, e := range entities {
+		fEntities = append(fEntities, flattenEntity(e)...)
 	}
+
+	// make entity list unique by schema/entity
+	uEntities := make(map[string]map[edn.Keyword]edn.RawMessage, 0)
+	for _, e := range fEntities {
+		entity := string(e["schema/entity"])
+		if _, ok := uEntities[entity]; !ok {
+			uEntities[entity] = e
+		}
+	}
+
+	// collect the values
+	fEntities = make([]map[edn.Keyword]edn.RawMessage, 0)
+	for _, v := range uEntities {
+		fEntities = append(fEntities, v)
+	}
+
 	return fEntities
 }
 
@@ -214,8 +271,10 @@ func flattenEntity(entity map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.
 			var n map[edn.Keyword]edn.RawMessage
 			err := edn.NewDecoder(bytes.NewReader(v)).Decode(&n)
 			if err == nil {
-				entity[k] = n["schema/entity"]
-				entities = append(entities, flattenEntity(n)...)
+				if e, ok := n["schema/entity"]; ok {
+					entity[k] = e
+					entities = append(entities, flattenEntity(n)...)
+				}
 				continue
 			}
 			// test array second
@@ -233,4 +292,67 @@ func flattenEntity(entity map[edn.Keyword]edn.RawMessage) []map[edn.Keyword]edn.
 	}
 
 	return entities
+}
+
+func makeEntity(x interface{}) interface{} {
+	// Starting value must be a pointer.
+	v := reflect.ValueOf(x)
+	if v.Kind() != reflect.Ptr {
+		v = reflect.ValueOf(&x)
+	}
+	setEntityValues(v, "")
+	return x
+}
+
+func setEntityValues(v reflect.Value, entityType string) {
+	switch v.Kind() {
+	case reflect.Ptr:
+		if v.IsZero() {
+			return
+		}
+		setEntityValues(v.Elem(), entityType)
+	case reflect.Interface:
+		if v.IsZero() {
+			return
+		}
+		iv := v.Elem()
+		switch iv.Kind() {
+		case reflect.Slice, reflect.Ptr:
+			setEntityValues(iv, entityType)
+		case reflect.Struct, reflect.Array:
+			// Copy required for modification.
+			copy := reflect.New(iv.Type()).Elem()
+			copy.Set(iv)
+			setEntityValues(copy, entityType)
+			v.Set(copy)
+		}
+	case reflect.Struct:
+		t := v.Type()
+		for i := 0; i < t.NumField(); i++ {
+			sf := t.Field(i)
+			fv := v.Field(i)
+			if sf.Name == "Entity" {
+				if entityType != "" {
+					if fv.String() == "" {
+						parts := strings.Split(entityType, "/")
+						fv.Set(reflect.ValueOf(fmt.Sprintf("$%s-%s", parts[len(parts)-1], uuid.New().String())))
+					}
+				} else {
+					entityType := sf.Tag.Get("entity-type")
+					setEntityValues(fv, entityType)
+				}
+			} else if sf.Name == "EntityType" {
+				if fv.Interface().(edn.Keyword) == "" {
+					fv.Set(reflect.ValueOf(edn.Keyword(entityType)))
+				}
+			} else {
+				setEntityValues(fv, entityType)
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < v.Len(); i++ {
+			setEntityValues(v.Index(i), entityType)
+		}
+
+	}
 }

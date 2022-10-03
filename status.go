@@ -19,7 +19,6 @@ package skill
 import (
 	"bytes"
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/atomist-skills/go-skill/internal"
@@ -62,7 +61,7 @@ func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 		return err
 	}
 	if resp.StatusCode != 202 {
-		log.Printf("Error sending logs: %s", resp.Status)
+		Log.Warnf("Error sending logs: %s", resp.Status)
 	}
 
 	defer resp.Body.Close()

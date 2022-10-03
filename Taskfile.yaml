@@ -1,0 +1,30 @@
+version: "3"
+
+vars:
+  IMAGE_NAME: cdupuis/index-cli-plugin:local
+
+tasks:
+  go:test:
+    cmds:
+      - go test -v
+
+  go:build:
+    cmds:
+      - go build -ldflags="-w -s"
+    env:
+      CGO_ENABLED: 0
+    vars:
+      GIT_COMMIT:
+        sh: git describe --tags | cut -c 2-
+
+  go:install:
+    deps: [go:build]
+    cmds:
+      - mkdir -p ~/.docker/cli-plugins
+      - install index-cli-plugin ~/.docker/cli-plugins/docker-index
+
+  go:fmt:
+    cmds:
+      - goimports -w .
+      - gofmt -w .
+      - go mod tidy

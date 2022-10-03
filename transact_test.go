@@ -16,81 +16,77 @@
 
 package skill
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
-type testEntity struct {
-	Entity
-	Foo string
+type Foo struct {
+	Entity `entity-type:"foo"`
+	Bars   []Bar   `edn:"bars"`
+	Bar    Bar     `edn:"bar"`
+	Refs   ManyRef `edn:"refs""`
+}
+
+type Bar struct {
+	Entity `entity-type:"bar"`
+	Name   string `edn:"name"`
 }
 
 func TestMakeWithoutId(t *testing.T) {
-	transaction := NewTransaction()
-	entity := transaction.MakeEntity("foo")
-	if entity.Entity == "" {
+	entity := MakeEntity(Foo{})
+	if entity.Entity.Entity == "" {
 		t.Errorf("Expected entity to be set")
 	}
-	if entity.Entity[0:1] != "$" {
+	if entity.Entity.Entity[0:1] != "$" {
 		t.Errorf("Expected entity should start with $")
 	}
 }
 
 func TestMakeWithId(t *testing.T) {
-	transaction := NewTransaction()
-	entity := transaction.MakeEntity("foo", "$repo")
-	if entity.Entity != "$repo" {
+	entity := MakeEntity(Foo{}, "$repo")
+	if entity.Entity.Entity != "$repo" {
 		t.Errorf("Expected entity to be set to $repo")
 	}
 }
 
-func TestAddEntities(t *testing.T) {
-	transaction := NewTransaction()
-	entity1 := testEntity{
-		Entity: transaction.MakeEntity("foo"),
-	}
-	entity2 := testEntity{
-		Entity: transaction.MakeEntity("bar"),
-	}
-	entity3 := testEntity{
-		Entity: transaction.MakeEntity("bar"),
-	}
-	transaction.AddEntities(entity1, entity2)
-	transaction.AddEntities(entity3)
-	if len(transaction.Entities()) != 3 {
-		t.Errorf("Expected three entities")
-	}
+func TestEntityRefs(t *testing.T) {
+	transaction := newTransaction(context.TODO(), RequestContext{})
+	entity1 := Bar{Name: "1"}
+	entity2 := Bar{Name: "2"}
+	entity3 := Bar{Name: "3"}
+	entity4 := Foo{}
+	transaction.AddEntities(entity1, entity2).AddEntities(entity3, entity4)
 	refs := transaction.EntityRefs("foo")
 	if len(refs) != 1 {
 		t.Errorf("Expected one entity ref")
 	}
 }
 
-type Foo struct {
-	Entity
-	Bars []Bar `edn:"bars"`
-}
-
-type Bar struct {
-	Entity
-	Name string `edn:"name"`
-}
-
 func TestMakeTransactionWithNested(t *testing.T) {
-	transaction := NewTransaction()
 	foos := []any{Foo{
-		Entity: transaction.MakeEntity("foo"),
 		Bars: []Bar{{
-			Entity: transaction.MakeEntity("bar"),
-			Name:   "Murphy's",
+			Name: "Murphy's",
 		}, {
-			Entity: transaction.MakeEntity("bar"),
-			Name:   "Irish Pub",
+			Name: "Irish Pub",
 		}},
+		Bar: Bar{
+			Entity: Entity{
+				EntityType: "barbar",
+				Entity:     "test",
+			},
+			Name: "Kanapee",
+		},
+		Refs: ManyRef{Add: []string{"foo", "bar"}},
 	}}
-	transactionEntity, err := makeTransaction(foos, "")
+
+	newFoos := makeEntity(foos)
+
+	transactionEntity, err := makeTransaction(newFoos.([]interface{}), "")
 	if err != nil {
 		t.Failed()
 	}
-	if len(transactionEntity.Data) != 3 {
+	if len(transactionEntity.Data) != 4 {
 		t.Errorf("Incorrect number of entities in transaction")
 	}
 }

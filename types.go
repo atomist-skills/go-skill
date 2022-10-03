@@ -89,10 +89,14 @@ type Status struct {
 }
 
 type RequestContext struct {
-	Event           EventIncoming
-	Log             Logger
-	Transact        Transact
-	TransactOrdered TransactOrdered
+	Event EventIncoming
+	Log   Logger
+
+	ctx context.Context
+}
+
+func (r *RequestContext) NewTransaction() Transaction {
+	return newTransaction(r.ctx, *r)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status

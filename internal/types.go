@@ -47,3 +47,15 @@ type TransactionEntityBody struct {
 type StatusBody struct {
 	Status interface{} `edn:"status,omitempty"`
 }
+
+type Team struct {
+	Id string `json:"id"`
+}
+
+type ResponseMessage struct {
+	ApiVersion    string `json:"api_version"`
+	CorrelationId string `json:"correlation_id"`
+	Team          Team   `json:"team"`
+	Type          string `json:"type"`
+	Entities      string `json:"entities"`
+}

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -31,7 +30,7 @@ import (
 
 // Start initiates startup of the skills given the provided Handlers
 func Start(handlers Handlers) {
-	log.Print("Starting skill...")
+	Log.Info("Starting skill...")
 	http.HandleFunc("/", createHttpHandler(handlers))
 
 	port := os.Getenv("PORT")
@@ -39,9 +38,9 @@ func Start(handlers Handlers) {
 		port = "8080"
 	}
 
-	log.Printf("Listening on port %s", port)
+	Log.Debugf("Listening on port %s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal(err)
+		Log.Fatal(err)
 	}
 }
 
@@ -64,11 +63,9 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		req := RequestContext{
 			Event: event,
 			Log:   logger,
-		}
 
-		messageSender := createMessageSender(ctx, req)
-		req.Transact = messageSender.Transact
-		req.TransactOrdered = messageSender.TransactOrdered
+			ctx: ctx,
+		}
 
 		start := time.Now()
 		logger.Debugf("Skill execution started")
@@ -98,14 +95,14 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 				State: running,
 			})
 			if err != nil {
-				log.Panicf("Failed to send status: %s", err)
+				Log.Panicf("Failed to send status: %s", err)
 			}
 
 			status := handle(ctx, req)
 
 			err = sendStatus(ctx, req, status)
 			if err != nil {
-				log.Panicf("Failed to send status: %s", err)
+				Log.Panicf("Failed to send status: %s", err)
 			}
 			w.WriteHeader(201)
 
