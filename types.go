@@ -96,7 +96,13 @@ type RequestContext struct {
 }
 
 func (r *RequestContext) NewTransaction() Transaction {
-	return newTransaction(r.ctx, *r)
+	return newTransaction(r.ctx, *r, nil)
+}
+
+type Transactor func(entities string)
+
+func (r *RequestContext) NewTransactionWithTransactor(transactor Transactor) Transaction {
+	return newTransaction(r.ctx, *r, transactor)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status

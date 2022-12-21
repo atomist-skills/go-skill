@@ -54,10 +54,11 @@ type Transaction interface {
 }
 
 type transaction struct {
-	entities []interface{}
-	ctx      context.Context
-	context  RequestContext
-	ordered  bool
+	entities   []interface{}
+	ctx        context.Context
+	context    RequestContext
+	ordered    bool
+	transactor Transactor
 }
 
 // Ordered makes this ordered
@@ -77,16 +78,28 @@ func (t *transaction) AddEntities(entities ...interface{}) Transaction {
 // Transact triggers a transaction of the entities to the backend.
 // The recorded entities are not discarded in this transaction for further reference
 func (t *transaction) Transact() error {
-	var transactor messageSender
-	if t.context.Event.Type != "" {
-		transactor = createMessageSender(t.ctx, t.context)
+	if t.transactor != nil {
+		transactions, err := makeTransaction(t.entities, "")
+		if err != nil {
+			return err
+		}
+
+		flattenedEntities := transactions.Data
+		bs, err := edn.MarshalPPrint(flattenedEntities, nil)
+		t.transactor(string(bs))
+		return nil
 	} else {
-		transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.Token)
-	}
-	if t.ordered {
-		return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
-	} else {
-		return transactor.Transact(t.entities)
+		var transactor messageSender
+		if t.context.Event.Type != "" {
+			transactor = createMessageSender(t.ctx, t.context)
+		} else {
+			transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.Token)
+		}
+		if t.ordered {
+			return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
+		} else {
+			return transactor.Transact(t.entities)
+		}
 	}
 }
 
@@ -129,12 +142,13 @@ func (t *transaction) EntityRef(entityType string) string {
 }
 
 // newTransaction creates a new Transaction to record entities
-func newTransaction(ctx context.Context, context RequestContext) Transaction {
+func newTransaction(ctx context.Context, context RequestContext, transactor Transactor) Transaction {
 	return &transaction{
-		entities: make([]interface{}, 0),
-		ctx:      ctx,
-		context:  context,
-		ordered:  false,
+		entities:   make([]interface{}, 0),
+		ctx:        ctx,
+		context:    context,
+		ordered:    false,
+		transactor: transactor,
 	}
 }
 
