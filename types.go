@@ -44,6 +44,7 @@ type EventIncoming struct {
 	Skill       Skill       `edn:"skill"`
 	Type        edn.Keyword `edn:"type"`
 	WorkspaceId string      `edn:"workspace-id"`
+	Environment string      `edn:"environment"`
 	Context     struct {
 		Subscription struct {
 			Name          string                             `edn:"name"`
