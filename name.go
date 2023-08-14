@@ -30,6 +30,10 @@ func nameFromEvent(event EventIncoming) string {
 			}
 		}
 		return name
+	case "query-result":
+		return event.Context.AsyncQueryResult.Name
+	case "event":
+		return event.Context.Event.Name
 	}
 	return ""
 }
