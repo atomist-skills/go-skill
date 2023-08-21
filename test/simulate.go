@@ -41,9 +41,9 @@ type SimulateOptions struct {
 
 type SimulateResult struct {
 	Results []struct {
-		ConfigurationName string                             `edn:"configuration-name"`
-		Subscription      string                             `edn:"subscription"`
-		Results           [][]map[edn.Keyword]edn.RawMessage `edn:"results"`
+		ConfigurationName string             `edn:"configuration-name"`
+		Subscription      string             `edn:"subscription"`
+		Results           [][]edn.RawMessage `edn:"results"`
 	} `edn:"results"`
 }
 
@@ -79,7 +79,7 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
                           :query %s}]
          :configurations [%s]}
 
- :tx-data %s 
+ :tx-data %s
 }
 `, options.Skill.Id, options.Skill.Namespace, options.Skill.Name, options.Skill.Version, subscriptionName[0:len(subscriptionName)-4], string(subscription), string(configuration), string(txData))
 
