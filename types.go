@@ -47,9 +47,9 @@ type EventIncoming struct {
 	Environment string      `edn:"environment,omitempty"`
 	Context     struct {
 		Subscription struct {
-			Name          string                             `edn:"name"`
-			Configuration Configuration                      `edn:"configuration"`
-			Result        [][]map[edn.Keyword]edn.RawMessage `edn:"result"`
+			Name          string             `edn:"name"`
+			Configuration Configuration      `edn:"configuration"`
+			Result        [][]edn.RawMessage `edn:"result"`
 			Metadata      struct {
 				AfterBasisT  int64  `edn:"tx"`
 				Tx           int64  `edn:"after-basis-t"`
