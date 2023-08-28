@@ -34,6 +34,8 @@ func nameFromEvent(event EventIncoming) string {
 		return event.Context.AsyncQueryResult.Name
 	case "event":
 		return event.Context.Event.Name
+	case "sync-request":
+		return event.Context.SyncRequest.Name
 	}
 	return ""
 }

@@ -66,6 +66,11 @@ type EventIncoming struct {
 				Tags    []ParameterValue  `edn:"tags"`
 			} `edn:"request"`
 		} `edn:"webhook"`
+		SyncRequest struct {
+			Name          string                         `edn:"name"`
+			Configuration Configuration                  `edn:"configuration"`
+			Metadata      map[edn.Keyword]edn.RawMessage `edn:"metadata"`
+		} `end:"sync-request"`
 		AsyncQueryResult struct {
 			Name     string                         `edn:"name"`
 			Metadata string                         `edn:"metadata"`
