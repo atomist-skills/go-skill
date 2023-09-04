@@ -100,8 +100,9 @@ const (
 )
 
 type Status struct {
-	State  edn.Keyword `edn:"state"`
-	Reason string      `edn:"reason,omitempty"`
+	State       edn.Keyword `edn:"state"`
+	Reason      string      `edn:"reason,omitempty"`
+	SyncRequest interface{} `edn:"sync-request,omitempty"`
 }
 
 type RequestContext struct {

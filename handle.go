@@ -106,6 +106,18 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			}
 			w.WriteHeader(201)
 
+			if req.Event.Type == "sync-request" {
+				r := struct {
+					Result interface{} `edn:"result"`
+				}{
+					Result: status.SyncRequest,
+				}
+				b, err := edn.Marshal(r)
+				if err != nil {
+					Log.Panicf("Failed to edn result in sync-request: %s", err)
+				}
+				w.Write(b)
+			}
 		} else {
 			err = sendStatus(ctx, req, Status{
 				State:  Failed,
