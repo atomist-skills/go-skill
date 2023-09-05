@@ -40,12 +40,13 @@ type Skill struct {
 }
 
 type EventIncoming struct {
-	ExecutionId string      `edn:"execution-id"`
-	Skill       Skill       `edn:"skill"`
-	Type        edn.Keyword `edn:"type"`
-	WorkspaceId string      `edn:"workspace-id"`
-	Environment string      `edn:"environment,omitempty"`
-	Context     struct {
+	ExecutionId  string      `edn:"execution-id"`
+	Skill        Skill       `edn:"skill"`
+	Type         edn.Keyword `edn:"type"`
+	WorkspaceId  string      `edn:"workspace-id"`
+	Environment  string      `edn:"environment,omitempty"`
+	Organization string      `edn:"organization,omitempty"`
+	Context      struct {
 		Subscription struct {
 			Name          string             `edn:"name"`
 			Configuration Configuration      `edn:"configuration"`
@@ -66,6 +67,11 @@ type EventIncoming struct {
 				Tags    []ParameterValue  `edn:"tags"`
 			} `edn:"request"`
 		} `edn:"webhook"`
+		SyncRequest struct {
+			Name          string                         `edn:"name"`
+			Configuration Configuration                  `edn:"configuration"`
+			Metadata      map[edn.Keyword]edn.RawMessage `edn:"metadata"`
+		} `edn:"sync-request"`
 		AsyncQueryResult struct {
 			Name     string                         `edn:"name"`
 			Metadata string                         `edn:"metadata"`
@@ -95,8 +101,9 @@ const (
 )
 
 type Status struct {
-	State  edn.Keyword `edn:"state"`
-	Reason string      `edn:"reason,omitempty"`
+	State       edn.Keyword `edn:"state"`
+	Reason      string      `edn:"reason,omitempty"`
+	SyncRequest interface{} `edn:"sync-request,omitempty"`
 }
 
 type RequestContext struct {
