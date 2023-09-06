@@ -16,9 +16,9 @@
 
 package skill
 
-// nameFromEvent extracts the name of either a subscription or
+// NameFromEvent extracts the name of either a subscription or
 // webhook from the incoming payload
-func nameFromEvent(event EventIncoming) string {
+func NameFromEvent(event EventIncoming) string {
 	switch event.Type {
 	case "subscription":
 		return event.Context.Subscription.Name
