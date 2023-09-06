@@ -62,6 +62,7 @@ func TestSuccessfulLogging(t *testing.T) {
 			Logs         string `edn:"logs"`
 			Transactions string `edn:"transactions"`
 			Query        string `edn:"query"`
+			Graphql      string `edn:"graphql"`
 		}{
 			Logs: server.URL,
 		},
