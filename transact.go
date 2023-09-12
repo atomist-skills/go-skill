@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 
@@ -185,6 +186,11 @@ func createMessageSender(ctx context.Context, req RequestContext) messageSender 
 	messageSender := messageSender{}
 
 	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
+		// Don't transact when evaluating policies locally
+		if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
+			return nil
+		}
+
 		var entityArray []interface{}
 		rt := reflect.TypeOf(entities)
 		switch rt.Kind() {

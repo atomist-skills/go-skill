@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/atomist-skills/go-skill/internal"
 
@@ -41,6 +42,10 @@ func NewFailedStatus(reason string) Status {
 }
 
 func sendStatus(ctx context.Context, req RequestContext, status Status) error {
+	// Don't send the status when evaluating policies locally
+	if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
+		return nil
+	}
 	bs, err := edn.MarshalPPrint(internal.StatusBody{
 		Status: status,
 	}, nil)
