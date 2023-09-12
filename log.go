@@ -76,6 +76,10 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
 	var doLog = func(msg string, level edn.Keyword) {
+		// Don't send logs when evaluating policies locally
+		if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
+			return
+		}
 		bs, err := edn.MarshalPPrint(internal.LogBody{Logs: []internal.LogEntry{{
 			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
 			Level:     level,
