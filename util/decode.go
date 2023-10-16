@@ -20,7 +20,7 @@ import "olympos.io/encoding/edn"
 
 // Decode returns a subscription result payload as a struct of specified
 // generic type P
-func Decode[P interface{}](event map[edn.Keyword]edn.RawMessage) P {
+func Decode[P interface{}](event edn.RawMessage) P {
 	ednboby, _ := edn.Marshal(event)
 	var decoded P
 	edn.Unmarshal(ednboby, &decoded)
