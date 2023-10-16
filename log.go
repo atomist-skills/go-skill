@@ -28,14 +28,16 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/logging"
 	"github.com/atomist-skills/go-skill/internal"
-
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2/google"
 	"olympos.io/encoding/edn"
 )
 
 var (
-	Log *logrus.Logger
+	Log       *logrus.Logger
+	projectID string
 )
 
 func init() {
@@ -56,6 +58,18 @@ func init() {
 		PadLevelText:     true,
 		ForceColors:      runtime.GOOS != "windows",
 	})
+
+	// try to obtain the GCP project id
+	if _, ok := os.LookupEnv("K_SERVICE"); ok {
+		ctx := context.Background()
+		credentials, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/compute")
+		if err == nil {
+			Log.Debugf("Found project id %s", credentials.ProjectID)
+			projectID = credentials.ProjectID
+		} else {
+			Log.Warnf("Failed to obtain project id: %s", err)
+		}
+	}
 }
 
 type Logger struct {
@@ -70,6 +84,8 @@ type Logger struct {
 
 	Error  func(msg string)
 	Errorf func(format string, a ...any)
+
+	Close func()
 }
 
 func createLogger(ctx context.Context, event EventIncoming) Logger {
@@ -106,37 +122,88 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		defer resp.Body.Close()
 	}
 
+	var gcpLogger *logging.Logger
+	var client *logging.Client
+	labels := make(map[string]string)
+	if projectID != "" {
+		client, _ = logging.NewClient(ctx, projectID)
+		gcpLogger = client.Logger("skill_logging")
+
+		labels["correlation_id"] = event.ExecutionId
+		labels["name"] = NameFromEvent(event)
+		labels["organization"] = event.Organization
+		labels["skill_id"] = fmt.Sprintf("%s/%s@%s", event.Skill.Namespace, event.Skill.Name, event.Skill.Version)
+		labels["skill_name"] = event.Skill.Name
+		labels["skill_namespace"] = event.Skill.Namespace
+		labels["skill_version"] = event.Skill.Version
+		labels["workspace_id"] = event.WorkspaceId
+	}
+
+	var doGcpLog = func(msg string, level edn.Keyword) {
+		if gcpLogger != nil {
+			var severity logging.Severity
+			switch level {
+			case internal.Debug:
+				severity = logging.Debug
+			case internal.Info:
+				severity = logging.Info
+			case internal.Warn:
+				severity = logging.Warning
+			case internal.Error:
+				severity = logging.Error
+			}
+			gcpLogger.Log(logging.Entry{
+				Labels:   labels,
+				Severity: severity,
+				Payload:  msg,
+			})
+		}
+	}
+
 	logger.Debug = func(msg string) {
 		Log.Debug(msg)
 		doLog(msg, internal.Debug)
+		doGcpLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
 		Log.Debugf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Debug)
+		doGcpLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
 	logger.Info = func(msg string) {
 		Log.Info(msg)
 		doLog(msg, internal.Info)
+		doGcpLog(msg, internal.Info)
 	}
 	logger.Infof = func(format string, a ...any) {
 		Log.Infof(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Info)
+		doGcpLog(fmt.Sprintf(format, a...), internal.Info)
 	}
 	logger.Warn = func(msg string) {
 		Log.Warn(msg)
 		doLog(msg, internal.Warn)
+		doGcpLog(msg, internal.Warn)
 	}
 	logger.Warnf = func(format string, a ...any) {
 		Log.Warnf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Warn)
+		doGcpLog(fmt.Sprintf(format, a...), internal.Warn)
 	}
 	logger.Error = func(msg string) {
 		Log.Error(msg)
 		doLog(msg, internal.Error)
+		doGcpLog(msg, internal.Error)
 	}
 	logger.Errorf = func(format string, a ...any) {
 		Log.Errorf(format, a...)
 		doLog(fmt.Sprintf(format, a...), internal.Error)
+		doGcpLog(fmt.Sprintf(format, a...), internal.Error)
+	}
+	logger.Close = func() {
+		if client != nil {
+			_ = client.Close()
+		}
 	}
 
 	debugInfo(logger, event)
