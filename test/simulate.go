@@ -68,6 +68,17 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
 	if err != nil {
 		t.Fatalf("Failed to load tx data: %s", err)
 	}
+	schemata := ""
+	if options.Schemata != "" {
+		schema, err := os.ReadFile(options.Schemata)
+		schemaName := filepath.Base(options.Schemata)
+		if err != nil {
+			t.Fatalf("Failed to load schema: %s", err)
+		}
+		schemata = fmt.Sprintf(`:schemata [{:name "%s"
+					:schema %s}]`, schemaName[0:len(schemaName)-4], string(schema))
+	}
+
 	configuration, err := edn.MarshalPPrint(options.Configuration, nil)
 
 	payload := fmt.Sprintf(`{
@@ -75,13 +86,14 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
          :namespace "%s"
          :name      "%s"
          :version   "%s"
+         %s
          :subscriptions [{:name "%s"
                           :query %s}]
          :configurations [%s]}
-
+		
  :tx-data %s
 }
-`, options.Skill.Id, options.Skill.Namespace, options.Skill.Name, options.Skill.Version, subscriptionName[0:len(subscriptionName)-4], string(subscription), string(configuration), string(txData))
+`, options.Skill.Id, options.Skill.Namespace, options.Skill.Name, options.Skill.Version, schemata, subscriptionName[0:len(subscriptionName)-4], string(subscription), string(configuration), string(txData))
 
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.atomist.com/datalog/team/%s/simulate", options.WorkspaceId), strings.NewReader(payload))
