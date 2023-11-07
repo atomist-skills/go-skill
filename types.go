@@ -73,9 +73,10 @@ type EventIncoming struct {
 			Metadata      map[edn.Keyword]edn.RawMessage `edn:"metadata"`
 		} `edn:"sync-request"`
 		AsyncQueryResult struct {
-			Name     string                         `edn:"name"`
-			Metadata string                         `edn:"metadata"`
-			Result   map[edn.Keyword]edn.RawMessage `edn:"result"`
+			Name          string                         `edn:"name"`
+			Configuration Configuration                  `edn:"configuration"`
+			Metadata      string                         `edn:"metadata"`
+			Result        map[edn.Keyword]edn.RawMessage `edn:"result"`
 		} `edn:"query-result"`
 		Event struct {
 			Name     string                         `edn:"name"`
