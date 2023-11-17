@@ -91,6 +91,28 @@ type Logger struct {
 func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
+	var sendLog = func(bs []byte) bool {
+		client := &http.Client{}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, event.Urls.Logs, bytes.NewBuffer(bs))
+		req.Header.Set("Authorization", "Bearer "+event.Token)
+		req.Header.Set("Content-Type", "application/edn")
+		if err != nil {
+			Log.Warnf("Failed to create log http request: %s", err)
+			return true
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			Log.Warnf("Failed to execute log http request: %s", err)
+			return false
+		}
+		if resp.StatusCode != 202 {
+			Log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
+			return false
+		}
+		defer resp.Body.Close()
+		return true
+	}
+
 	var doLog = func(msg string, level edn.Keyword) {
 		// Don't send logs when evaluating policies locally
 		if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
@@ -103,23 +125,16 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		}}}, nil)
 		if err != nil {
 			Log.Panicf("Failed to marshal log message: %s", err)
+			return
 		}
 
-		client := &http.Client{}
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, event.Urls.Logs, bytes.NewBuffer(bs))
-		req.Header.Set("Authorization", "Bearer "+event.Token)
-		req.Header.Set("Content-Type", "application/edn")
-		if err != nil {
-			Log.Warnf("Failed to send log message: %s", err)
+		retryCount := 1
+		for i := 0; i <= retryCount; i++ {
+			if sendLog(bs) {
+				break
+			}
+			time.Sleep(time.Millisecond * 500)
 		}
-		resp, err := client.Do(req)
-		if err != nil {
-			Log.Warnf("Failed to execute log http request: %s", err)
-		}
-		if resp.StatusCode != 202 {
-			Log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
-		}
-		defer resp.Body.Close()
 	}
 
 	var gcpLogger *logging.Logger
