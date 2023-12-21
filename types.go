@@ -52,8 +52,8 @@ type EventIncoming struct {
 			Configuration Configuration      `edn:"configuration"`
 			Result        [][]edn.RawMessage `edn:"result"`
 			Metadata      struct {
-				AfterBasisT  int64  `edn:"tx"`
-				Tx           int64  `edn:"after-basis-t"`
+				AfterBasisT  int64  `edn:"after-basis-t"`
+				Tx           int64  `edn:"tx"`
 				ScheduleName string `edn:"schedule-name"`
 			} `edn:"metadata"`
 		} `edn:"subscription"`
