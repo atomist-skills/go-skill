@@ -16,31 +16,69 @@ import (
 	"olympos.io/encoding/edn"
 )
 
-type EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal *goals.Goal, dataSource data.DataSource) (evaluators.GoalEvaluator, error)
+type (
+	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal *goals.Goal, dataSource data.DataSource) (evaluators.GoalEvaluator, error)
 
-var evaluatorSelector EvaluatorSelector
-
-func StartPolicy(
-	subscriptionNames []string,
-	selector EvaluatorSelector,
-) {
-	evaluatorSelector = selector
-	handlers := skill.Handlers{
-		"async-query-packages":      evaluateGoalsWithAsyncQueryResult,
-		"async-query-image-details": evaluateGoalsWithAsyncQueryResult,
-
-		"evaluate_goals_locally": evaluateGoalsLocally,
+	Handler interface {
+		Start()
 	}
 
-	for _, n := range subscriptionNames {
-		handlers[n] = evaluateGoals
+	EventHandler struct {
+		enableAsync       bool
+		enableLocalEval   bool
+		subscriptionNames []string
+		evalSelector      EvaluatorSelector
+	}
+
+	Opt func(handler *EventHandler) error
+)
+
+func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSelector, opts ...Opt) (*EventHandler, error) {
+	p := &EventHandler{
+		subscriptionNames: subscriptionNames,
+		evalSelector:      evalSelector,
+	}
+
+	for _, o := range opts {
+		err := o(p)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return p, nil
+}
+
+func WithAsyncQuerySupport(p *EventHandler) error {
+	p.enableAsync = true
+	return nil
+}
+
+func WithLocalEvalSupport(p *EventHandler) error {
+	p.enableLocalEval = true
+	return nil
+}
+
+func (p *EventHandler) Start() {
+	handlers := skill.Handlers{}
+	for _, n := range p.subscriptionNames {
+		handlers[n] = p.handle
+	}
+
+	if p.enableAsync {
+		handlers["async-query-packages"] = p.handleAsync
+		handlers["async-query-image-details"] = p.handleAsync
+	}
+
+	if p.enableLocalEval {
+		handlers["evaluate_goals_locally"] = p.handleLocal
 	}
 
 	skill.Start(handlers)
 }
 
-// EvaluateGoalsLocally runs the goal evaluation locally and returns the results without transacting them.
-func evaluateGoalsLocally(ctx context.Context, req skill.RequestContext) skill.Status {
+// handleLocal runs the goal evaluation locally and returns the results without transacting them.
+func (p *EventHandler) handleLocal(ctx context.Context, req skill.RequestContext) skill.Status {
 	goalName := req.Event.Skill.Name
 
 	cfg := req.Event.Context.SyncRequest.Configuration.Name
@@ -78,7 +116,7 @@ func evaluateGoalsLocally(ctx context.Context, req skill.RequestContext) skill.S
 		return skill.NewFailedStatus(fmt.Sprintf("unable to create data source: %s", err.Error()))
 	}
 
-	evaluator, err := evaluatorSelector(ctx, req, &goal, dataSource)
+	evaluator, err := p.evalSelector(ctx, req, &goal, dataSource)
 	if err != nil {
 		return skill.NewFailedStatus(fmt.Sprintf("unable to create evaluator: %s", err.Error()))
 	}
@@ -99,7 +137,7 @@ func evaluateGoalsLocally(ctx context.Context, req skill.RequestContext) skill.S
 	}
 }
 
-func evaluateGoalsWithAsyncQueryResult(ctx context.Context, req skill.RequestContext) skill.Status {
+func (p *EventHandler) handleAsync(ctx context.Context, req skill.RequestContext) skill.Status {
 	asyncClient := query.NewAsyncQueryClient(req.Log, req.Event.Token, req.Event.Context.AsyncQueryResult.Metadata)
 
 	metadata := req.Event.Context.AsyncQueryResult.Metadata
@@ -121,11 +159,11 @@ func evaluateGoalsWithAsyncQueryResult(ctx context.Context, req skill.RequestCon
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create data source [%s]", err.Error()))
 	}
 
-	return evaluateGoalWithData(ctx, req, dataSource, subscriptionResult, req.Event.Context.AsyncQueryResult.Configuration)
+	return p.evaluateGoalWithData(ctx, req, dataSource, subscriptionResult, req.Event.Context.AsyncQueryResult.Configuration)
 }
 
 // EvaluateGoals runs the goal evaluation and returns the results after transacting them.
-func evaluateGoals(ctx context.Context, req skill.RequestContext) skill.Status {
+func (p *EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
 	edn, err := edn.Marshal(req.Event.Context.Subscription.Result)
 	if err != nil {
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to marshal metadata [%s]", err.Error()))
@@ -141,10 +179,10 @@ func evaluateGoals(ctx context.Context, req skill.RequestContext) skill.Status {
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create data source [%s]", err.Error()))
 	}
 
-	return evaluateGoalWithData(ctx, req, dataSource, req.Event.Context.Subscription.Result, req.Event.Context.Subscription.Configuration)
+	return p.evaluateGoalWithData(ctx, req, dataSource, req.Event.Context.Subscription.Result, req.Event.Context.Subscription.Configuration)
 }
 
-func evaluateGoalWithData(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, subscriptionResult [][]edn.RawMessage, configuration skill.Configuration) skill.Status {
+func (p *EventHandler) evaluateGoalWithData(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, subscriptionResult [][]edn.RawMessage, configuration skill.Configuration) skill.Status {
 	goalName := req.Event.Skill.Name
 
 	cfg := configuration.Name
@@ -165,7 +203,7 @@ func evaluateGoalWithData(ctx context.Context, req skill.RequestContext, dataSou
 		Args:          values,
 	}
 
-	evaluator, err := evaluatorSelector(ctx, req, &goal, dataSource)
+	evaluator, err := p.evalSelector(ctx, req, &goal, dataSource)
 	if err != nil {
 		req.Log.Errorf(err.Error())
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create goal evaluator: %s", err.Error()))
