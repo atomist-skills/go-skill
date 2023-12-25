@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	data2 "github.com/atomist-skills/go-skill/policy/data"
-
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/evaluators"
@@ -18,18 +16,17 @@ import (
 )
 
 type (
-	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal *goals.Goal, dataSource data2.DataSource) (evaluators.GoalEvaluator, error)
+	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal goals.Goal, dataSource data.DataSource) (evaluators.GoalEvaluator, error)
 
 	Handler interface {
 		Start()
 	}
 
-	subscriptionProvider func(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, error)
+	subscriptionProvider func(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, skill.Configuration, error)
 	dataSourceProvider   func(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error)
+	transactionFilter    func(ctx context.Context, req skill.RequestContext) bool
 
 	EventHandler struct {
-		enableLocalEval bool
-
 		// parameters
 		evalSelector      EvaluatorSelector
 		subscriptionNames []string
@@ -37,136 +34,43 @@ type (
 		// hooks used by opts
 		subscriptionDataProviders []subscriptionProvider
 		dataSourceProviders       []dataSourceProvider
+		transactFilters           []transactionFilter
 	}
 
-	Opt func(handler *EventHandler) error
+	Opt func(handler *EventHandler)
 )
 
-func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSelector, opts ...Opt) (*EventHandler, error) {
-	p := &EventHandler{
+func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSelector, opts ...Opt) EventHandler {
+	p := EventHandler{
 		subscriptionNames: subscriptionNames,
 		evalSelector:      evalSelector,
 	}
 
 	for _, o := range opts {
-		err := o(p)
-		if err != nil {
-			return nil, err
-		}
+		o(&p)
 	}
 
-	// fallback (default) handlers
-	if p.subscriptionDataProviders == nil {
-		p.subscriptionDataProviders = append(p.subscriptionDataProviders, func(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, error) {
-			return req.Event.Context.Subscription.Result, nil
-		})
-	}
-
-	if len(p.dataSourceProviders) == 0 {
-		p.dataSourceProviders = append(p.dataSourceProviders, func(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error) {
-			ds, err := data.NewSyncGraphqlDataSource(ctx, req)
-			if err != nil {
-				return nil, err
-			}
-
-			return []data.DataSource{ds}, nil
-		})
-	}
-
-	return p, nil
+	return p
 }
 
-func WithLocalEvalSupport(p *EventHandler) error {
-	p.enableLocalEval = true
-	return nil
-}
-
-func (h *EventHandler) Start() {
+func (h EventHandler) Start() {
 	handlers := skill.Handlers{}
 	for _, n := range h.subscriptionNames {
 		handlers[n] = h.handle
 	}
 
-	if h.enableLocalEval {
-		handlers["evaluate_goals_locally"] = h.handleLocal
-	}
-
 	skill.Start(handlers)
 }
 
-// handleLocal runs the goal evaluation locally and returns the results without transacting them.
-func (h *EventHandler) handleLocal(ctx context.Context, req skill.RequestContext) skill.Status {
-	// todo convert this to another option like async
-	goalName := req.Event.Skill.Name
-
-	cfg := req.Event.Context.SyncRequest.Configuration.Name
-	params := req.Event.Context.SyncRequest.Configuration.Parameters
-
-	values := map[string]interface{}{}
-	for _, p := range params {
-		values[p.Name] = p.Value
-	}
-
-	if _, ok := values["definitionName"]; !ok {
-		return skill.NewFailedStatus("Missing definition name in policy skill configuration")
-	}
-
-	goal := goals.Goal{
-		Definition:    values["definitionName"].(string),
-		Configuration: cfg,
-		Args:          values,
-	}
-
-	metaFixedData := map[string][]byte{}
-	for k, v := range req.Event.Context.SyncRequest.Metadata {
-		metaFixedData[string(k)] = v
-	}
-	fixedDs := data.NewFixedDataSource(metaFixedData)
-
-	digest := "localDigest"
-
-	subscriptionResult := query.CommonSubscriptionQueryResult{
-		ImageDigest: digest,
-	}
-
-	gqlDs, err := data.NewSyncGraphqlDataSource(ctx, req)
-	if err != nil {
-		return skill.NewFailedStatus(fmt.Sprintf("unable to create data source: %s", err.Error()))
-	}
-	dataSource := data.NewChainDataSource(
-		fixedDs,
-		gqlDs,
-	)
-
-	evaluator, err := h.evalSelector(ctx, req, &goal, dataSource)
-	if err != nil {
-		return skill.NewFailedStatus(fmt.Sprintf("unable to create evaluator: %s", err.Error()))
-	}
-
-	if evaluator.GetFlags()&evaluators.EVAL_SKIP_LOCAL != 0 {
-		return skill.NewCompletedStatus("Skipped eval due to EVAL_SKIP_LOCAL")
-	}
-
-	results, err := evaluator.EvaluateGoal(ctx, req, subscriptionResult, [][]edn.RawMessage{})
-	if err != nil {
-		return skill.NewFailedStatus(fmt.Sprintf("Error evaluating goal %s", err.Error()))
-	}
-
-	return skill.Status{
-		State:       skill.Completed,
-		Reason:      fmt.Sprintf("Goal %s evaluated", goalName),
-		SyncRequest: results,
-	}
-}
-
 // EvaluateGoals runs the goal evaluation and returns the results after transacting them.
-func (h *EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
+func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
 	var (
 		subscriptionResult [][]edn.RawMessage
+		configuration      skill.Configuration
 		err                error
 	)
 	for _, provider := range h.subscriptionDataProviders {
-		subscriptionResult, err = provider(ctx, req)
+		subscriptionResult, configuration, err = provider(ctx, req)
 		if err != nil {
 			return skill.NewFailedStatus(fmt.Sprintf("failed to retrieve subscription result [%s]", err.Error()))
 		}
@@ -190,34 +94,90 @@ func (h *EventHandler) handle(ctx context.Context, req skill.RequestContext) ski
 
 	dataSource := data.NewChainDataSource(sources...)
 
-	return h.evaluateGoalWithData(ctx, req, dataSource, subscriptionResult, req.Event.Context.Subscription.Configuration)
+	return h.evaluate(ctx, req, dataSource, subscriptionResult, configuration)
 }
 
-func (h *EventHandler) evaluateGoalWithData(ctx context.Context, req skill.RequestContext, dataSource data2.DataSource, subscriptionResult [][]edn.RawMessage, configuration skill.Configuration) skill.Status {
+func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, subscriptionResult [][]edn.RawMessage, configuration skill.Configuration) skill.Status {
 	goalName := req.Event.Skill.Name
 
 	cfg := configuration.Name
 	params := configuration.Parameters
 
-	values := map[string]interface{}{}
+	paramValues := map[string]interface{}{}
 	for _, p := range params {
-		values[p.Name] = p.Value
+		paramValues[p.Name] = p.Value
 	}
 
-	if _, ok := values["definitionName"]; !ok {
+	if _, ok := paramValues["definitionName"]; !ok {
 		return skill.NewFailedStatus("Missing definition name in policy skill configuration")
 	}
 
 	goal := goals.Goal{
-		Definition:    values["definitionName"].(string),
+		Definition:    paramValues["definitionName"].(string),
 		Configuration: cfg,
-		Args:          values,
+		Args:          paramValues,
 	}
 
-	evaluator, err := h.evalSelector(ctx, req, &goal, dataSource)
+	evaluator, err := h.evalSelector(ctx, req, goal, dataSource)
 	if err != nil {
 		req.Log.Errorf(err.Error())
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create goal evaluator: %s", err.Error()))
+	}
+
+	commonResults := util.Decode[query.CommonSubscriptionQueryResult](subscriptionResult[0][0])
+	digest := commonResults.ImageDigest
+
+	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
+	evaluationTs := time.Now().UTC()
+
+	goalResults, err := evaluator.EvaluateGoal(ctx, req, commonResults, subscriptionResult)
+	if err != nil {
+		req.Log.Errorf("Failed to evaluate goal %s for digest %s: %s", goal.Definition, digest, err.Error())
+		return skill.NewFailedStatus("Failed to evaluate goal")
+	}
+
+	for _, f := range h.transactFilters {
+		if !f(ctx, req) {
+			// if not transacting, we return results as part of the skill result
+			return skill.Status{
+				State:       skill.Completed,
+				Reason:      fmt.Sprintf("Goal %s evaluated", goalName),
+				SyncRequest: goalResults,
+			}
+		}
+	}
+
+	return transact(
+		ctx,
+		req,
+		configuration,
+		goalName,
+		digest,
+		goal,
+		subscriptionResult,
+		evaluationTs,
+		goalResults,
+	)
+}
+
+func transact(
+	ctx context.Context,
+	req skill.RequestContext,
+	configuration skill.Configuration,
+	goalName string,
+	digest string,
+	goal goals.Goal,
+	subscriptionResult [][]edn.RawMessage,
+	evaluationTs time.Time,
+	goalResults []goals.GoalEvaluationQueryResult,
+) skill.Status {
+	storageTuple := util.Decode[[]string](subscriptionResult[0][1])
+	storageId := storageTuple[0]
+	configHash := storageTuple[1]
+
+	if goalResults == nil {
+		req.Log.Infof("goal %s returned no data for digest %s, skipping storing results", goal.Definition, digest)
+		return skill.NewCompletedStatus(fmt.Sprintf("Goal %s evaluated - no data found", goalName))
 	}
 
 	es, err := storage.NewEvaluationStorage(ctx)
@@ -225,57 +185,14 @@ func (h *EventHandler) evaluateGoalWithData(ctx context.Context, req skill.Reque
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create evaluation storage: %s", err.Error()))
 	}
 
-	var entities []interface{}
-	var commonResults query.CommonSubscriptionQueryResult
-	var previousStorageId string
-	var previousConfigHash string
-
-	// Find correct storageId and configHash from subscription result by only returning n/a if that is the only option
-	for _, result := range subscriptionResult {
-		storageTuple := util.Decode[[]string](result[1])
-		if previousStorageId == "" || previousStorageId == "n/a" {
-			previousStorageId = storageTuple[0]
-		}
-		if previousConfigHash == "" || previousConfigHash == "n/a" {
-			previousConfigHash = storageTuple[1]
-		}
-	}
-
-	subscriptionResults := [][]edn.RawMessage{}
-	for _, result := range subscriptionResult {
-		// Filter out duplicate results if we have real storage id and n/a
-		storageTuple := util.Decode[[]string](result[1])
-		resultPreviousStorageId := storageTuple[0]
-		if resultPreviousStorageId == previousStorageId {
-			subscriptionResults = append(subscriptionResults, result)
-		}
-
-		commonResults = util.Decode[query.CommonSubscriptionQueryResult](result[0])
-	}
-
-	digest := commonResults.ImageDigest
-	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
-	evaluationTs := time.Now().UTC()
-
-	qr, err := evaluator.EvaluateGoal(ctx, req, commonResults, subscriptionResults)
-	if err != nil {
-		req.Log.Errorf("Failed to evaluate goal %s for digest %s: %s", goal.Definition, digest, err.Error())
-		return skill.NewFailedStatus("Failed to evaluate goal")
-	}
-
-	if qr == nil {
-		req.Log.Infof("goal %s returned no data for digest %s, skipping storing results", goal.Definition, digest)
-		return skill.NewCompletedStatus(fmt.Sprintf("Goal %s evaluated - no data found", goalName))
-	}
-
-	configDiffer, configHash, err := evaluators.GoalConfigsDiffer(req.Log, configuration, digest, goal, previousConfigHash)
+	configDiffer, configHash, err := evaluators.GoalConfigsDiffer(req.Log, configuration, digest, goal, configHash)
 	if err != nil {
 		req.Log.Errorf("Failed to check if config hash changed for digest: %s", digest, err)
 		req.Log.Warnf("Will continue with the evaluation nonetheless")
 		configDiffer = true
 	}
 
-	differ, storageId, err := evaluators.GoalResultsDiffer(req.Log, qr, digest, goal, previousStorageId)
+	differ, storageId, err := evaluators.GoalResultsDiffer(req.Log, goalResults, digest, goal, storageId)
 	if err != nil {
 		req.Log.Errorf("Failed to check if goal results changed for digest: %s", digest, err)
 		req.Log.Warnf("Will continue with the evaluation nonetheless")
@@ -283,13 +200,14 @@ func (h *EventHandler) evaluateGoalWithData(ctx context.Context, req skill.Reque
 	}
 
 	if differ {
-		if err := es.Store(ctx, qr, storageId, req.Event.Environment, req.Log); err != nil {
+		if err := es.Store(ctx, goalResults, storageId, req.Event.Environment, req.Log); err != nil {
 			return skill.NewFailedStatus(fmt.Sprintf("Failed to store evaluation results for digest %s: %s", digest, err.Error()))
 		}
 	}
 
+	var entities []interface{}
 	if differ || configDiffer {
-		entity := goals.CreateEntitiesFromResults(qr, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs)
+		entity := goals.CreateEntitiesFromResults(goalResults, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs)
 		entities = append(entities, entity)
 	}
 
