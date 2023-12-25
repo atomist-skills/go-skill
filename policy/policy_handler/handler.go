@@ -8,7 +8,6 @@ import (
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
-	"github.com/atomist-skills/go-skill/policy/query"
 	"github.com/atomist-skills/go-skill/policy/storage"
 	"github.com/atomist-skills/go-skill/util"
 	"olympos.io/encoding/edn"
@@ -123,7 +122,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create goal evaluator: %s", err.Error()))
 	}
 
-	commonResults := util.Decode[query.CommonSubscriptionQueryResult](subscriptionResult[0][0])
+	commonResults := util.Decode[goals.CommonSubscriptionQueryResult](subscriptionResult[0][0])
 	digest := commonResults.ImageDigest
 
 	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)

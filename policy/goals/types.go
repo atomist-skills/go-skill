@@ -18,39 +18,50 @@ package goals
 
 import (
 	"context"
-	"github.com/atomist-skills/go-skill/policy/query"
 	"time"
 
 	"github.com/atomist-skills/go-skill"
 	"olympos.io/encoding/edn"
 )
 
-type Goal struct {
-	Args          map[string]interface{}
-	Definition    string
-	Configuration string
-}
+type (
+	Goal struct {
+		Args          map[string]interface{}
+		Definition    string
+		Configuration string
+	}
 
-type GoalEvaluationQueryResult struct {
-	Details map[edn.Keyword]interface{} `edn:"details"`
-}
+	GoalEvaluationQueryResult struct {
+		Details map[edn.Keyword]interface{} `edn:"details"`
+	}
 
-type DockerImageEntity struct {
-	skill.Entity `entity-type:"docker/image"`
-	Digest       string `edn:"docker.image/digest"`
-}
+	DockerImageEntity struct {
+		skill.Entity `entity-type:"docker/image"`
+		Digest       string `edn:"docker.image/digest"`
+	}
 
-type GoalEvaluationResultEntity struct {
-	skill.Entity   `entity-type:"goal/result"`
-	Definition     string            `edn:"goal.definition/name"`
-	Configuration  string            `edn:"goal.configuration/name"`
-	Subject        DockerImageEntity `edn:"goal.result/subject"`
-	DeviationCount int               `edn:"goal.result/deviation-count"`
-	StorageId      string            `edn:"goal.result/storage-id"`
-	ConfigHash     string            `edn:"goal.result/config-hash"`
-	CreatedAt      time.Time         `edn:"goal.result/created-at"`
-}
+	GoalEvaluationResultEntity struct {
+		skill.Entity   `entity-type:"goal/result"`
+		Definition     string            `edn:"goal.definition/name"`
+		Configuration  string            `edn:"goal.configuration/name"`
+		Subject        DockerImageEntity `edn:"goal.result/subject"`
+		DeviationCount int               `edn:"goal.result/deviation-count"`
+		StorageId      string            `edn:"goal.result/storage-id"`
+		ConfigHash     string            `edn:"goal.result/config-hash"`
+		CreatedAt      time.Time         `edn:"goal.result/created-at"`
+	}
+
+	ImagePlatform struct {
+		Architecture string `edn:"docker.platform/architecture" json:"architecture"`
+		Os           string `edn:"docker.platform/os" json:"os"`
+	}
+
+	CommonSubscriptionQueryResult struct {
+		ImageDigest    string          `edn:"docker.image/digest"`
+		ImagePlatforms []ImagePlatform `edn:"docker.image/platform" json:"platforms"`
+	}
+)
 
 type GoalEvaluator interface {
-	EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData query.CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) ([]GoalEvaluationQueryResult, error)
+	EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) ([]GoalEvaluationQueryResult, error)
 }

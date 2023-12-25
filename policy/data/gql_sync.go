@@ -6,17 +6,15 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/atomist-skills/go-skill/policy/query"
 	"github.com/hasura/go-graphql-client"
 
 	"github.com/atomist-skills/go-skill"
 )
 
 type SyncGraphqlDataSource struct {
-	Url              string
-	GraphqlClient    *graphql.Client
-	AsyncQueryClient query.AsyncQueryClient
-	RequestContext   skill.RequestContext
+	Url            string
+	GraphqlClient  *graphql.Client
+	RequestContext skill.RequestContext
 }
 
 func NewSyncGraphqlDataSource(ctx context.Context, req skill.RequestContext) (SyncGraphqlDataSource, error) {
