@@ -7,7 +7,6 @@ import (
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
-	"github.com/atomist-skills/go-skill/policy/evaluators"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/query"
 	"github.com/atomist-skills/go-skill/policy/storage"
@@ -16,7 +15,7 @@ import (
 )
 
 type (
-	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal goals.Goal, dataSource data.DataSource) (evaluators.GoalEvaluator, error)
+	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal goals.Goal, dataSource data.DataSource) (goals.GoalEvaluator, error)
 
 	Handler interface {
 		Start()
@@ -185,14 +184,14 @@ func transact(
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create evaluation storage: %s", err.Error()))
 	}
 
-	configDiffer, configHash, err := evaluators.GoalConfigsDiffer(req.Log, configuration, digest, goal, configHash)
+	configDiffer, configHash, err := goals.GoalConfigsDiffer(req.Log, configuration, digest, goal, configHash)
 	if err != nil {
 		req.Log.Errorf("Failed to check if config hash changed for digest: %s", digest, err)
 		req.Log.Warnf("Will continue with the evaluation nonetheless")
 		configDiffer = true
 	}
 
-	differ, storageId, err := evaluators.GoalResultsDiffer(req.Log, goalResults, digest, goal, storageId)
+	differ, storageId, err := goals.GoalResultsDiffer(req.Log, goalResults, digest, goal, storageId)
 	if err != nil {
 		req.Log.Errorf("Failed to check if goal results changed for digest: %s", digest, err)
 		req.Log.Warnf("Will continue with the evaluation nonetheless")

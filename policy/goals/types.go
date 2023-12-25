@@ -17,6 +17,8 @@
 package goals
 
 import (
+	"context"
+	"github.com/atomist-skills/go-skill/policy/query"
 	"time"
 
 	"github.com/atomist-skills/go-skill"
@@ -47,4 +49,8 @@ type GoalEvaluationResultEntity struct {
 	StorageId      string            `edn:"goal.result/storage-id"`
 	ConfigHash     string            `edn:"goal.result/config-hash"`
 	CreatedAt      time.Time         `edn:"goal.result/created-at"`
+}
+
+type GoalEvaluator interface {
+	EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData query.CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) ([]GoalEvaluationQueryResult, error)
 }

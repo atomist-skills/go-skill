@@ -1,9 +1,7 @@
-package evaluators
+package goals
 
 import (
 	"fmt"
-
-	"github.com/atomist-skills/go-skill/policy/goals"
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/mitchellh/hashstructure/v2"
@@ -11,7 +9,7 @@ import (
 
 // GoalResultsDiffer checks if the current query results differ from the previous ones.
 // It returns the storage id for the current query results.
-func GoalResultsDiffer(log skill.Logger, queryResults []goals.GoalEvaluationQueryResult, digest string, goal goals.Goal, previousStorageId string) (bool, string, error) {
+func GoalResultsDiffer(log skill.Logger, queryResults []GoalEvaluationQueryResult, digest string, goal Goal, previousStorageId string) (bool, string, error) {
 	log.Infof("Generating storage id for goal %s, image %s", goal.Definition, digest)
 	hash, err := hashstructure.Hash(queryResults, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -43,7 +41,7 @@ func isRelevantParam(str string) bool {
 }
 
 // Returns the config hash for the current skill config
-func GoalConfigsDiffer(log skill.Logger, config skill.Configuration, digest string, goal goals.Goal, previousConfigHash string) (bool, string, error) {
+func GoalConfigsDiffer(log skill.Logger, config skill.Configuration, digest string, goal Goal, previousConfigHash string) (bool, string, error) {
 	log.Debugf("Generating config hash for goal %s, image %s", goal.Definition, digest)
 
 	params := config.Parameters
