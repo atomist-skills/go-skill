@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -32,7 +33,7 @@ func NewSyncGraphqlDataSource(ctx context.Context, req skill.RequestContext) (Sy
 	}, nil
 }
 
-func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}) (*QueryResponse, error) {
+func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
 	log := ds.RequestContext.Log
 
 	log.Infof("Graphql endpoint: %s", ds.RequestContext.Event.Urls.Graphql)
@@ -45,5 +46,11 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 	}
 
 	log.Infof("GraphQL query response: %s", string(res))
-	return &QueryResponse{Data: res}, nil
+
+	err = json.Unmarshal(res, output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &QueryResponse{}, nil
 }

@@ -4,22 +4,31 @@ import (
 	"context"
 )
 
+type FixedDataSourceUnmarshaler func(data []byte, output interface{}) error
+
 // FixedDataSource returns static data from responses passed in at construction time
 type FixedDataSource struct {
-	data map[string][]byte
+	unmarshaler FixedDataSourceUnmarshaler
+	data        map[string][]byte
 }
 
-func NewFixedDataSource(data map[string][]byte) FixedDataSource {
+func NewFixedDataSource(unmarshaler FixedDataSourceUnmarshaler, data map[string][]byte) FixedDataSource {
 	return FixedDataSource{
-		data: data,
+		unmarshaler: unmarshaler,
+		data:        data,
 	}
 }
 
-func (ds FixedDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}) (*QueryResponse, error) {
+func (ds FixedDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
 	res, ok := ds.data[queryName]
 	if !ok {
 		return nil, nil
 	}
 
-	return &QueryResponse{Data: res}, nil
+	err := ds.unmarshaler(res, output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &QueryResponse{}, nil
 }

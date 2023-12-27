@@ -2,6 +2,8 @@ package policy_handler
 
 import (
 	"context"
+	"encoding/json"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"olympos.io/encoding/edn"
@@ -35,7 +37,7 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext) ([]dat
 	for k, v := range req.Event.Context.SyncRequest.Metadata {
 		metaFixedData[string(k)] = v
 	}
-	fixedDs := data.NewFixedDataSource(metaFixedData)
+	fixedDs := data.NewFixedDataSource(json.Unmarshal, metaFixedData)
 
 	return []data.DataSource{
 		fixedDs,

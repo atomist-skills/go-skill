@@ -48,7 +48,7 @@ func NewAsyncDataSource(req skill.RequestContext, metadata string) AsyncDataSour
 	}
 }
 
-func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}) (*QueryResponse, error) {
+func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
 	ednVariables := map[edn.Keyword]interface{}{}
 	for k, v := range variables {
 		ednVariables[edn.Keyword(k)] = v
@@ -116,5 +116,5 @@ func UnwrapAsyncResponse(result map[edn.Keyword]edn.RawMessage) (DataSource, err
 		queryResponses[string(k)] = v
 	}
 
-	return NewFixedDataSource(queryResponses), nil
+	return NewFixedDataSource(edn.Unmarshal, queryResponses), nil
 }

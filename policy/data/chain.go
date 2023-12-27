@@ -17,9 +17,9 @@ func NewChainDataSource(links ...DataSource) *ChainDataSource {
 	}
 }
 
-func (ds ChainDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}) (*QueryResponse, error) {
+func (ds ChainDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
 	for _, l := range ds.links {
-		res, err := l.Query(ctx, queryName, query, variables)
+		res, err := l.Query(ctx, queryName, query, variables, output)
 		if res != nil || err != nil {
 			return res, err
 		}
