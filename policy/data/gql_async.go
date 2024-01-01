@@ -3,6 +3,7 @@ package data
 import (
 	"bytes"
 	"context"
+	b64 "encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/atomist-skills/go-skill"
 	"olympos.io/encoding/edn"
 )
+
+const AsyncQueryName = "async-query"
 
 type (
 	AsyncQueryBody struct {
@@ -25,52 +28,77 @@ type (
 	}
 
 	AsyncQueryResponse struct {
-		Data   map[edn.Keyword]edn.RawMessage `edn:"data"`
+		Data   edn.RawMessage `edn:"data"`
 		Errors []struct {
 			Message string `edn:"message"`
 		}
 	}
 
+	AsyncResultMetadata struct {
+		SubscriptionResults [][]edn.RawMessage            `edn:"subscription"`
+		AsyncQueryResults   map[string]AsyncQueryResponse `edn:"results"`
+		InFlightQueryName   string                        `edn:"query-name"`
+	}
+
 	AsyncDataSource struct {
-		log      skill.Logger
-		url      string
-		token    string
-		metadata string
+		log                 skill.Logger
+		url                 string
+		token               string
+		subscriptionResults [][]edn.RawMessage
+		asyncResults        map[string]AsyncQueryResponse
 	}
 )
 
-func NewAsyncDataSource(req skill.RequestContext, metadata string) AsyncDataSource {
+func NewAsyncDataSource(req skill.RequestContext, subscriptionResults [][]edn.RawMessage, asyncResults map[string]AsyncQueryResponse) AsyncDataSource {
 	return AsyncDataSource{
-		log:      req.Log,
-		url:      fmt.Sprintf("%s:enqueue", req.Event.Urls.Graphql),
-		token:    req.Event.Token,
-		metadata: metadata,
+		log:                 req.Log,
+		url:                 fmt.Sprintf("%s:enqueue", req.Event.Urls.Graphql),
+		token:               req.Event.Token,
+		subscriptionResults: subscriptionResults,
+		asyncResults:        asyncResults,
 	}
 }
 
 func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
+	if existingResult, ok := ds.asyncResults[queryName]; ok {
+		if len(existingResult.Errors) != 0 {
+			return nil, fmt.Errorf("async query returned error: %s", existingResult.Errors[0].Message)
+		}
+		return &QueryResponse{}, edn.Unmarshal(existingResult.Data, output)
+	}
+
 	ednVariables := map[edn.Keyword]interface{}{}
 	for k, v := range variables {
 		ednVariables[edn.Keyword(k)] = v
 	}
 
+	metadata := AsyncResultMetadata{
+		SubscriptionResults: ds.subscriptionResults,
+		AsyncQueryResults:   ds.asyncResults,
+		InFlightQueryName:   queryName,
+	}
+	metadataEdn, err := edn.Marshal(metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
 	request := AsyncQueryRequest{
-		Name: queryName,
+		Name: AsyncQueryName,
 		Body: AsyncQueryBody{
 			Query:     query,
 			Variables: ednVariables,
 		},
-		Metadata: ds.metadata,
+		Metadata: b64.StdEncoding.EncodeToString(metadataEdn),
 	}
 
-	edn, err := edn.Marshal(request)
+	reqEdn, err := edn.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 
-	ds.log.Infof("Async request: %s", string(edn))
+	ds.log.Infof("Async request: %s", string(reqEdn))
 
-	req, err := http.NewRequest(http.MethodPost, ds.url, bytes.NewBuffer(edn))
+	req, err := http.NewRequest(http.MethodPost, ds.url, bytes.NewBuffer(reqEdn))
 	if err != nil {
 		return nil, err
 	}
@@ -93,28 +121,4 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 	}
 
 	return &QueryResponse{AsyncRequestMade: true}, nil
-}
-
-func UnwrapAsyncResponse(result map[edn.Keyword]edn.RawMessage) (DataSource, error) {
-	ednBody, err := edn.Marshal(result)
-	if err != nil {
-		return nil, err
-	}
-
-	var response AsyncQueryResponse
-	err = edn.Unmarshal(ednBody, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(response.Errors) > 0 {
-		return nil, fmt.Errorf(response.Errors[0].Message)
-	}
-
-	queryResponses := map[string][]byte{}
-	for k, v := range response.Data {
-		queryResponses[string(k)] = v
-	}
-
-	return NewFixedDataSource(edn.Unmarshal, queryResponses), nil
 }
