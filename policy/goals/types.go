@@ -60,8 +60,8 @@ type (
 		ImageDigest    string          `edn:"docker.image/digest"`
 		ImagePlatforms []ImagePlatform `edn:"docker.image/platform" json:"platforms"`
 	}
-)
 
-type GoalEvaluator interface {
-	EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) ([]GoalEvaluationQueryResult, error)
-}
+	GoalEvaluator interface {
+		EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) ([]GoalEvaluationQueryResult, error)
+	}
+)

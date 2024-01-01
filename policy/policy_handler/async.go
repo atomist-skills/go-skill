@@ -4,12 +4,13 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"olympos.io/encoding/edn"
 )
 
-const EventNameAsyncQuery = data.AsyncQueryName // these must match for the event handler to be registered
+const eventNameAsyncQuery = data.AsyncQueryName // these must match for the event handler to be registered
 
 // WithAsync will enable async graphql queries for the EventHandler.
 // When used, data.QueryResponse#AsyncRequestMade will be true when performed asynchronously.
@@ -17,14 +18,14 @@ const EventNameAsyncQuery = data.AsyncQueryName // these must match for the even
 // It will be automatically retried once the async query results are returned.
 func WithAsync() Opt {
 	return func(h *EventHandler) {
-		h.subscriptionNames = append(h.subscriptionNames, EventNameAsyncQuery)
+		h.subscriptionNames = append(h.subscriptionNames, eventNameAsyncQuery)
 		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getAsyncSubscriptionData)
 		h.dataSourceProviders = append(h.dataSourceProviders, buildAsyncDataSources)
 	}
 }
 
 func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, skill.Configuration, error) {
-	if req.Event.Context.AsyncQueryResult.Name != EventNameAsyncQuery {
+	if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
 		return nil, skill.Configuration{}, nil
 	}
 
@@ -50,7 +51,7 @@ func buildAsyncDataSources(ctx context.Context, req skill.RequestContext) ([]dat
 		return []data.DataSource{}, nil
 	}
 
-	if req.Event.Context.AsyncQueryResult.Name != EventNameAsyncQuery {
+	if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
 		return []data.DataSource{
 			data.NewAsyncDataSource(req, req.Event.Context.Subscription.Result, map[string]data.AsyncQueryResponse{}),
 		}, nil
