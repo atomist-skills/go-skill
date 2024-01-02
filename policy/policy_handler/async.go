@@ -12,15 +12,30 @@ import (
 
 const eventNameAsyncQuery = data.AsyncQueryName // these must match for the event handler to be registered
 
-// WithAsync will enable async graphql queries for the EventHandler.
-// When used, data.QueryResponse#AsyncRequestMade will be true when performed asynchronously.
-// If that flag is set, the policy evaluator should terminate early with no results.
-// It will be automatically retried once the async query results are returned.
-func WithAsync() Opt {
+// WithAsyncMultiQuery will enable the async graphql data source to spool results across multiple queries.
+// These intermediate results are stored in the following requests' metadata,
+// and as such risk hitting the upper limit on the metadata field, and failing.
+func WithAsyncMultiQuery() Opt {
 	return func(h *EventHandler) {
 		h.subscriptionNames = append(h.subscriptionNames, eventNameAsyncQuery)
 		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getAsyncSubscriptionData)
-		h.dataSourceProviders = append(h.dataSourceProviders, buildAsyncDataSources)
+		h.dataSourceProviders = append(h.dataSourceProviders, buildAsyncDataSources(true))
+	}
+}
+
+// withAsync is enabled by default, added last after all other Opts.
+func withAsync() Opt {
+	return func(h *EventHandler) {
+		// don't register if WithAsyncMultiQuery is already enabled
+		for _, s := range h.subscriptionNames {
+			if s == eventNameAsyncQuery {
+				return
+			}
+		}
+
+		h.subscriptionNames = append(h.subscriptionNames, eventNameAsyncQuery)
+		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getAsyncSubscriptionData)
+		h.dataSourceProviders = append(h.dataSourceProviders, buildAsyncDataSources(false))
 	}
 }
 
@@ -43,35 +58,35 @@ func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) ([]
 	return metadata.SubscriptionResults, req.Event.Context.AsyncQueryResult.Configuration, nil
 }
 
-// buildAsyncDataSources always returns at least a data.AsyncDataSource,
-// but also will return a data.FixedDataSource containing the event payload when applicable
-func buildAsyncDataSources(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error) {
-	if req.Event.Context.SyncRequest.Name == eventNameLocalEval {
-		return []data.DataSource{}, nil
-	}
+func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
+	return func(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error) {
+		if req.Event.Context.SyncRequest.Name == eventNameLocalEval {
+			return []data.DataSource{}, nil
+		}
 
-	if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
+		if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
+			return []data.DataSource{
+				data.NewAsyncDataSource(multipleQuerySupport, req, req.Event.Context.Subscription.Result, map[string]data.AsyncQueryResponse{}),
+			}, nil
+		}
+
+		metaEdn, err := b64.StdEncoding.DecodeString(req.Event.Context.AsyncQueryResult.Metadata)
+
+		var metadata data.AsyncResultMetadata
+		err = edn.Unmarshal(metaEdn, &metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+		}
+
+		var queryResponse data.AsyncQueryResponse
+		err = edn.Unmarshal(req.Event.Context.AsyncQueryResult.Result, &queryResponse)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal async query result: %w", err)
+		}
+		metadata.AsyncQueryResults[metadata.InFlightQueryName] = queryResponse
+
 		return []data.DataSource{
-			data.NewAsyncDataSource(req, req.Event.Context.Subscription.Result, map[string]data.AsyncQueryResponse{}),
+			data.NewAsyncDataSource(multipleQuerySupport, req, metadata.SubscriptionResults, metadata.AsyncQueryResults),
 		}, nil
 	}
-
-	metaEdn, err := b64.StdEncoding.DecodeString(req.Event.Context.AsyncQueryResult.Metadata)
-
-	var metadata data.AsyncResultMetadata
-	err = edn.Unmarshal(metaEdn, &metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
-	}
-
-	var queryResponse data.AsyncQueryResponse
-	err = edn.Unmarshal(req.Event.Context.AsyncQueryResult.Result, &queryResponse)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal async query result: %w", err)
-	}
-	metadata.AsyncQueryResults[metadata.InFlightQueryName] = queryResponse
-
-	return []data.DataSource{
-		data.NewAsyncDataSource(req, metadata.SubscriptionResults, metadata.AsyncQueryResults),
-	}, nil
 }

@@ -41,21 +41,28 @@ type (
 	}
 
 	AsyncDataSource struct {
-		log                 skill.Logger
-		url                 string
-		token               string
-		subscriptionResults [][]edn.RawMessage
-		asyncResults        map[string]AsyncQueryResponse
+		multipleQuerySupport bool
+		log                  skill.Logger
+		url                  string
+		token                string
+		subscriptionResults  [][]edn.RawMessage
+		asyncResults         map[string]AsyncQueryResponse
 	}
 )
 
-func NewAsyncDataSource(req skill.RequestContext, subscriptionResults [][]edn.RawMessage, asyncResults map[string]AsyncQueryResponse) AsyncDataSource {
+func NewAsyncDataSource(
+	multipleQuerySupport bool,
+	req skill.RequestContext,
+	subscriptionResults [][]edn.RawMessage,
+	asyncResults map[string]AsyncQueryResponse,
+) AsyncDataSource {
 	return AsyncDataSource{
-		log:                 req.Log,
-		url:                 fmt.Sprintf("%s:enqueue", req.Event.Urls.Graphql),
-		token:               req.Event.Token,
-		subscriptionResults: subscriptionResults,
-		asyncResults:        asyncResults,
+		multipleQuerySupport: multipleQuerySupport,
+		log:                  req.Log,
+		url:                  fmt.Sprintf("%s:enqueue", req.Event.Urls.Graphql),
+		token:                req.Event.Token,
+		subscriptionResults:  subscriptionResults,
+		asyncResults:         asyncResults,
 	}
 }
 
@@ -65,6 +72,11 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 			return nil, fmt.Errorf("async query returned error: %s", existingResult.Errors[0].Message)
 		}
 		return &QueryResponse{}, edn.Unmarshal(existingResult.Data, output)
+	}
+
+	if len(ds.asyncResults) > 0 && !ds.multipleQuerySupport {
+		ds.log.Debugf("skipping async query for query %s due to lack of multipleQuerySupport", queryName)
+		return nil, nil // don't error, in case there is another applicable query executor down-chain
 	}
 
 	ednVariables := map[edn.Keyword]interface{}{}

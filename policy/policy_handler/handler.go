@@ -38,6 +38,10 @@ type (
 	Opt func(handler *EventHandler)
 )
 
+var defaultOpts = []Opt{
+	withAsync(),
+}
+
 func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSelector, opts ...Opt) EventHandler {
 	p := EventHandler{
 		subscriptionNames: subscriptionNames,
@@ -45,6 +49,9 @@ func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSel
 	}
 
 	for _, o := range opts {
+		o(&p)
+	}
+	for _, o := range defaultOpts {
 		o(&p)
 	}
 
