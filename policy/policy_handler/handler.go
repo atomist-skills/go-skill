@@ -60,7 +60,6 @@ func (h EventHandler) Start() {
 	skill.Start(handlers)
 }
 
-// EvaluateGoals runs the goal evaluation and returns the results after transacting them.
 func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
 	var (
 		subscriptionResult [][]edn.RawMessage

@@ -46,7 +46,6 @@ func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) ([]
 // buildAsyncDataSources always returns at least a data.AsyncDataSource,
 // but also will return a data.FixedDataSource containing the event payload when applicable
 func buildAsyncDataSources(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error) {
-	// todo can/should local eval support async queries?
 	if req.Event.Context.SyncRequest.Name == eventNameLocalEval {
 		return []data.DataSource{}, nil
 	}
