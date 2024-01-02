@@ -3,6 +3,8 @@ package policy_handler
 import (
 	"context"
 	"fmt"
+	"os/user"
+	"strings"
 	"time"
 
 	"github.com/atomist-skills/go-skill"
@@ -113,8 +115,16 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		paramValues[p.Name] = p.Value
 	}
 
+	// atm-skill local appends the current user's name to the skill name
+	// we can strip that suffix off before calling evalSelector to let it match on the original name
+	goalDefName := goalName
+	u, err := user.Current()
+	if err == nil {
+		goalDefName = strings.TrimSuffix(goalDefName, fmt.Sprintf("-%s", u.Username))
+	}
+
 	goal := goals.Goal{
-		Definition:    goalName,
+		Definition:    goalDefName,
 		Configuration: cfg,
 		Args:          paramValues,
 	}
