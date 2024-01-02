@@ -40,6 +40,7 @@ type (
 
 var defaultOpts = []Opt{
 	withAsync(),
+	withSubscription(),
 }
 
 func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSelector, opts ...Opt) EventHandler {
