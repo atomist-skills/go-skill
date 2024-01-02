@@ -105,12 +105,8 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		paramValues[p.Name] = p.Value
 	}
 
-	if _, ok := paramValues["definitionName"]; !ok {
-		return skill.NewFailedStatus("Missing definition name in policy skill configuration")
-	}
-
 	goal := goals.Goal{
-		Definition:    paramValues["definitionName"].(string),
+		Definition:    goalName,
 		Configuration: cfg,
 		Args:          paramValues,
 	}
