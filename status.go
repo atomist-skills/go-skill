@@ -41,6 +41,13 @@ func NewFailedStatus(reason string) Status {
 	}
 }
 
+func NewRetryableStatus(reason string) Status {
+	return Status{
+		State:  retryable,
+		Reason: reason,
+	}
+}
+
 func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 	// Don't send the status when evaluating policies locally
 	if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
