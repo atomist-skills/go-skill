@@ -11,12 +11,17 @@ import (
 // It returns the storage id for the current query results.
 func GoalResultsDiffer(log skill.Logger, queryResults []GoalEvaluationQueryResult, digest string, goal Goal, previousStorageId string) (bool, string, error) {
 	log.Infof("Generating storage id for goal %s, image %s", goal.Definition, digest)
-	hash, err := hashstructure.Hash(queryResults, hashstructure.FormatV2, nil)
-	if err != nil {
-		return false, "", fmt.Errorf("failed to generate storage id for goal %s, image %s: %s", goal.Definition, digest, err)
-	}
 
-	storageId := fmt.Sprint(hash)
+	storageId := "no-data"
+
+	if queryResults != nil {
+		hash, err := hashstructure.Hash(queryResults, hashstructure.FormatV2, nil)
+		if err != nil {
+			return false, "", fmt.Errorf("failed to generate storage id for goal %s, image %s: %s", goal.Definition, digest, err)
+		}
+
+		storageId = fmt.Sprint(hash)
+	}
 
 	differ := storageId != previousStorageId
 

@@ -45,8 +45,8 @@ type (
 		Definition           string                     `edn:"goal.definition/name"`
 		Configuration        string                     `edn:"goal.configuration/name"`
 		Subject              DockerImageEntity          `edn:"goal.result/subject"`
-		DeviationCount       int                        `edn:"goal.result/deviation-count"`
-		StorageId            string                     `edn:"goal.result/storage-id"`
+		DeviationCount       *int                       `edn:"goal.result/deviation-count"`
+		StorageId            *string                    `edn:"goal.result/storage-id"`
 		ConfigHash           string                     `edn:"goal.result/config-hash"`
 		CreatedAt            time.Time                  `edn:"goal.result/created-at"`
 		TransactionCondition TransactionConditionEntity `edn:"atomist/tx-iff"`

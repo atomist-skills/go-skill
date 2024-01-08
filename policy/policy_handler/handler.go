@@ -194,8 +194,7 @@ func transact(
 	configHash := storageTuple[1]
 
 	if goalResults == nil {
-		req.Log.Infof("goal %s returned no data for digest %s, skipping storing results", goal.Definition, digest)
-		return skill.NewCompletedStatus(fmt.Sprintf("Goal %s evaluated - no data found", goalName))
+		req.Log.Infof("goal %s returned no data for digest %s", goal.Definition, digest)
 	}
 
 	es, err := storage.NewEvaluationStorage(ctx)
@@ -217,7 +216,7 @@ func transact(
 		differ = true
 	}
 
-	if differ {
+	if differ && goalResults != nil {
 		if err := es.Store(ctx, goalResults, storageId, req.Event.Environment, req.Log); err != nil {
 			return skill.NewFailedStatus(fmt.Sprintf("Failed to store evaluation results for digest %s: %s", digest, err.Error()))
 		}
