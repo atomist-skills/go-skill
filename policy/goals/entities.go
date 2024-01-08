@@ -18,14 +18,26 @@ package goals
 
 import "time"
 
-func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time) GoalEvaluationResultEntity {
-	return GoalEvaluationResultEntity{
-		Definition:     goalDefinition,
-		Configuration:  goalConfiguration,
-		Subject:        DockerImageEntity{Digest: image},
-		DeviationCount: len(results),
-		StorageId:      storageId,
-		ConfigHash:     configHash,
-		CreatedAt:      evaluationTs,
+func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time, tx int64) GoalEvaluationResultEntity {
+	entity := GoalEvaluationResultEntity{
+		Definition:    goalDefinition,
+		Configuration: goalConfiguration,
+		Subject:       DockerImageEntity{Digest: image},
+		ConfigHash:    configHash,
+		CreatedAt:     evaluationTs,
+		TransactionCondition: TransactionConditionEntity{
+			Args: map[string]interface{}{"tx-arg": tx},
+			Where: []byte(`[[?entity :goal.result/created-at _ ?tx true]
+			[(< ?tx ?tx-arg)]]`),
+		},
 	}
+
+	if storageId != "no-data" {
+		deviationCount := len(results)
+
+		entity.DeviationCount = &deviationCount
+		entity.StorageId = &storageId
+	}
+
+	return entity
 }

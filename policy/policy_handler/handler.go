@@ -22,8 +22,8 @@ type (
 		Start()
 	}
 
-	subscriptionProvider func(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, skill.Configuration, error)
-	dataSourceProvider   func(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error)
+	subscriptionProvider func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error)
+	dataSourceProvider   func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error)
 	transactionFilter    func(ctx context.Context, req skill.RequestContext) bool
 
 	EventHandler struct {
@@ -72,28 +72,31 @@ func (h EventHandler) Start() {
 
 func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
 	var (
-		subscriptionResult [][]edn.RawMessage
+		evaluationMetadata *goals.EvaluationMetadata
 		configuration      skill.Configuration
 		err                error
 	)
 	for _, provider := range h.subscriptionDataProviders {
-		subscriptionResult, configuration, err = provider(ctx, req)
+		evaluationMetadata, configuration, err = provider(ctx, req)
 		if err != nil {
 			return skill.NewFailedStatus(fmt.Sprintf("failed to retrieve subscription result [%s]", err.Error()))
 		}
-		if subscriptionResult != nil {
+		if evaluationMetadata != nil {
 			break
 		}
 	}
 
-	if subscriptionResult == nil {
+	if evaluationMetadata == nil {
 		return skill.NewFailedStatus(fmt.Sprintf("subscription result was not found"))
 	}
 
 	sources := []data.DataSource{}
 	for _, provider := range h.dataSourceProviders {
-		ds, err := provider(ctx, req)
+		ds, err := provider(ctx, req, *evaluationMetadata)
 		if err != nil {
+			if err.Error() == "An unexpected error has occurred" {
+				return skill.NewRetryableStatus(fmt.Sprintf("Failed to create data source [%s]", err.Error()))
+			}
 			return skill.NewFailedStatus(fmt.Sprintf("failed to create data source [%s]", err.Error()))
 		}
 		sources = append(sources, ds...)
@@ -101,11 +104,13 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 
 	dataSource := data.NewChainDataSource(sources...)
 
-	return h.evaluate(ctx, req, dataSource, subscriptionResult, configuration)
+	return h.evaluate(ctx, req, dataSource, *evaluationMetadata, configuration)
 }
 
-func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, subscriptionResult [][]edn.RawMessage, configuration skill.Configuration) skill.Status {
+func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, evaluationMetadata goals.EvaluationMetadata, configuration skill.Configuration) skill.Status {
 	goalName := req.Event.Skill.Name
+	tx := evaluationMetadata.SubscriptionTx
+	subscriptionResult := evaluationMetadata.SubscriptionResult
 
 	cfg := configuration.Name
 	params := configuration.Parameters
@@ -168,6 +173,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		subscriptionResult,
 		evaluationTs,
 		goalResults,
+		tx,
 	)
 }
 
@@ -181,14 +187,14 @@ func transact(
 	subscriptionResult [][]edn.RawMessage,
 	evaluationTs time.Time,
 	goalResults []goals.GoalEvaluationQueryResult,
+	tx int64,
 ) skill.Status {
 	storageTuple := util.Decode[[]string](subscriptionResult[0][1])
 	storageId := storageTuple[0]
 	configHash := storageTuple[1]
 
 	if goalResults == nil {
-		req.Log.Infof("goal %s returned no data for digest %s, skipping storing results", goal.Definition, digest)
-		return skill.NewCompletedStatus(fmt.Sprintf("Goal %s evaluated - no data found", goalName))
+		req.Log.Infof("goal %s returned no data for digest %s", goal.Definition, digest)
 	}
 
 	es, err := storage.NewEvaluationStorage(ctx)
@@ -210,7 +216,7 @@ func transact(
 		differ = true
 	}
 
-	if differ {
+	if differ && goalResults != nil {
 		if err := es.Store(ctx, goalResults, storageId, req.Event.Environment, req.Log); err != nil {
 			return skill.NewFailedStatus(fmt.Sprintf("Failed to store evaluation results for digest %s: %s", digest, err.Error()))
 		}
@@ -218,7 +224,7 @@ func transact(
 
 	var entities []interface{}
 	if differ || configDiffer {
-		entity := goals.CreateEntitiesFromResults(goalResults, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs)
+		entity := goals.CreateEntitiesFromResults(goalResults, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs, tx)
 		entities = append(entities, entity)
 	}
 
