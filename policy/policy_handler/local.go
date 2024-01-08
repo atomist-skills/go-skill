@@ -3,6 +3,7 @@ package policy_handler
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"

@@ -4,10 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/atomist-skills/go-skill/policy/goals"
-
 	"cloud.google.com/go/storage"
 	"github.com/atomist-skills/go-skill"
+	"github.com/atomist-skills/go-skill/policy/goals"
 	"google.golang.org/api/googleapi"
 	"olympos.io/encoding/edn"
 )

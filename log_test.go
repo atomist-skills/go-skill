@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/atomist-skills/go-skill/internal"
-
 	"olympos.io/encoding/edn"
 )
 

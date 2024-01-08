@@ -4,10 +4,10 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
-	"github.com/atomist-skills/go-skill/policy/goals"
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
+	"github.com/atomist-skills/go-skill/policy/goals"
 	"olympos.io/encoding/edn"
 )
 

@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"golang.org/x/oauth2"
-
-	"github.com/hasura/go-graphql-client"
-
 	"github.com/atomist-skills/go-skill"
+	"github.com/hasura/go-graphql-client"
+	"golang.org/x/oauth2"
 )
 
 type SyncGraphqlDataSource struct {

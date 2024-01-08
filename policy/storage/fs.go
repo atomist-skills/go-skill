@@ -4,9 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/atomist-skills/go-skill/policy/goals"
-
 	"github.com/atomist-skills/go-skill"
+	"github.com/atomist-skills/go-skill/policy/goals"
 	"olympos.io/encoding/edn"
 )
 

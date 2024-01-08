@@ -26,9 +26,7 @@ import (
 	"strings"
 
 	"github.com/atomist-skills/go-skill/internal"
-
 	"github.com/google/uuid"
-
 	"olympos.io/encoding/edn"
 )
 

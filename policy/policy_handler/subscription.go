@@ -2,9 +2,9 @@ package policy_handler
 
 import (
 	"context"
-	"github.com/atomist-skills/go-skill/policy/goals"
 
 	"github.com/atomist-skills/go-skill"
+	"github.com/atomist-skills/go-skill/policy/goals"
 )
 
 func withSubscription() Opt {

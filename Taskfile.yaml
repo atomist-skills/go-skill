@@ -39,6 +39,7 @@ tasks:
 
   go:fmt:
     cmds:
+      - find . -type f -name "*.go" -exec .github/remove_empty_imports.sh "{}" \;
       - goimports -w .
       - gofmt -w .
       - go mod tidy

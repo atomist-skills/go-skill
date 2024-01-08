@@ -6,12 +6,12 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/atomist-skills/go-skill/policy/goals"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/atomist-skills/go-skill"
+	"github.com/atomist-skills/go-skill/policy/goals"
 	"olympos.io/encoding/edn"
 )
 
