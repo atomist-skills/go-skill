@@ -2,8 +2,9 @@ package policy_handler
 
 import (
 	"context"
+	"github.com/atomist-skills/go-skill/policy/goals"
+
 	"github.com/atomist-skills/go-skill"
-	"olympos.io/encoding/edn"
 )
 
 func withSubscription() Opt {
@@ -12,10 +13,14 @@ func withSubscription() Opt {
 	}
 }
 
-func getSubscriptionData(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, skill.Configuration, error) {
+func getSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
 	if req.Event.Context.Subscription.Name == "" {
 		return nil, skill.Configuration{}, nil
 	}
 
-	return req.Event.Context.Subscription.Result, req.Event.Context.Subscription.Configuration, nil
+	evalMeta := &goals.EvaluationMetadata{
+		SubscriptionResult: req.Event.Context.Subscription.Result,
+		SubscriptionTx:     req.Event.Context.Subscription.Metadata.Tx,
+	}
+	return evalMeta, req.Event.Context.Subscription.Configuration, nil
 }

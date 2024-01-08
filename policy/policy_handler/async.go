@@ -4,6 +4,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
+	"github.com/atomist-skills/go-skill/policy/goals"
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
@@ -39,7 +40,7 @@ func withAsync() Opt {
 	}
 }
 
-func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, skill.Configuration, error) {
+func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
 	if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
 		return nil, skill.Configuration{}, nil
 	}
@@ -55,18 +56,18 @@ func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) ([]
 		return nil, skill.Configuration{}, fmt.Errorf("failed to unmarshal async metadata: %w", err)
 	}
 
-	return metadata.SubscriptionResults, req.Event.Context.AsyncQueryResult.Configuration, nil
+	return &metadata.EvaluationMetadata, req.Event.Context.AsyncQueryResult.Configuration, nil
 }
 
 func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
-	return func(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error) {
+	return func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
 		if req.Event.Context.SyncRequest.Name == eventNameLocalEval {
 			return []data.DataSource{}, nil
 		}
 
 		if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
 			return []data.DataSource{
-				data.NewAsyncDataSource(multipleQuerySupport, req, req.Event.Context.Subscription.Result, map[string]data.AsyncQueryResponse{}),
+				data.NewAsyncDataSource(multipleQuerySupport, req, evalMeta, map[string]data.AsyncQueryResponse{}),
 			}, nil
 		}
 
@@ -86,7 +87,7 @@ func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
 		metadata.AsyncQueryResults[metadata.InFlightQueryName] = queryResponse
 
 		return []data.DataSource{
-			data.NewAsyncDataSource(multipleQuerySupport, req, metadata.SubscriptionResults, metadata.AsyncQueryResults),
+			data.NewAsyncDataSource(multipleQuerySupport, req, metadata.EvaluationMetadata, metadata.AsyncQueryResults),
 		}, nil
 	}
 }

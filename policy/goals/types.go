@@ -41,14 +41,20 @@ type (
 	}
 
 	GoalEvaluationResultEntity struct {
-		skill.Entity   `entity-type:"goal/result"`
-		Definition     string            `edn:"goal.definition/name"`
-		Configuration  string            `edn:"goal.configuration/name"`
-		Subject        DockerImageEntity `edn:"goal.result/subject"`
-		DeviationCount int               `edn:"goal.result/deviation-count"`
-		StorageId      string            `edn:"goal.result/storage-id"`
-		ConfigHash     string            `edn:"goal.result/config-hash"`
-		CreatedAt      time.Time         `edn:"goal.result/created-at"`
+		skill.Entity         `entity-type:"goal/result"`
+		Definition           string                     `edn:"goal.definition/name"`
+		Configuration        string                     `edn:"goal.configuration/name"`
+		Subject              DockerImageEntity          `edn:"goal.result/subject"`
+		DeviationCount       int                        `edn:"goal.result/deviation-count"`
+		StorageId            string                     `edn:"goal.result/storage-id"`
+		ConfigHash           string                     `edn:"goal.result/config-hash"`
+		CreatedAt            time.Time                  `edn:"goal.result/created-at"`
+		TransactionCondition TransactionConditionEntity `edn:"atomist/tx-iff"`
+	}
+
+	TransactionConditionEntity struct {
+		Args  map[string]interface{} `edn:"args"`
+		Where edn.RawMessage         `edn:"where"`
 	}
 
 	ImagePlatform struct {
@@ -59,6 +65,11 @@ type (
 	CommonSubscriptionQueryResult struct {
 		ImageDigest    string          `edn:"docker.image/digest"`
 		ImagePlatforms []ImagePlatform `edn:"docker.image/platform" json:"platforms"`
+	}
+
+	EvaluationMetadata struct {
+		SubscriptionResult [][]edn.RawMessage `edn:"subscription-result"`
+		SubscriptionTx     int64              `edn:"subscription-tx"`
 	}
 
 	GoalEvaluator interface {

@@ -6,6 +6,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/atomist-skills/go-skill/policy/goals"
 	"io"
 	"net/http"
 	"strings"
@@ -36,9 +37,9 @@ type (
 	}
 
 	AsyncResultMetadata struct {
-		SubscriptionResults [][]edn.RawMessage            `edn:"subscription"`
-		AsyncQueryResults   map[string]AsyncQueryResponse `edn:"results"`
-		InFlightQueryName   string                        `edn:"query-name"`
+		EvaluationMetadata goals.EvaluationMetadata      `edn:"evalMeta"`
+		AsyncQueryResults  map[string]AsyncQueryResponse `edn:"results"`
+		InFlightQueryName  string                        `edn:"query-name"`
 	}
 
 	AsyncDataSource struct {
@@ -46,7 +47,7 @@ type (
 		log                  skill.Logger
 		url                  string
 		token                string
-		subscriptionResults  [][]edn.RawMessage
+		evaluationMetadata   goals.EvaluationMetadata
 		asyncResults         map[string]AsyncQueryResponse
 	}
 )
@@ -54,7 +55,7 @@ type (
 func NewAsyncDataSource(
 	multipleQuerySupport bool,
 	req skill.RequestContext,
-	subscriptionResults [][]edn.RawMessage,
+	evaluationMetadata goals.EvaluationMetadata,
 	asyncResults map[string]AsyncQueryResponse,
 ) AsyncDataSource {
 	return AsyncDataSource{
@@ -62,7 +63,7 @@ func NewAsyncDataSource(
 		log:                  req.Log,
 		url:                  fmt.Sprintf("%s:enqueue", req.Event.Urls.Graphql),
 		token:                req.Event.Token,
-		subscriptionResults:  subscriptionResults,
+		evaluationMetadata:   evaluationMetadata,
 		asyncResults:         asyncResults,
 	}
 }
@@ -86,9 +87,9 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 	}
 
 	metadata := AsyncResultMetadata{
-		SubscriptionResults: ds.subscriptionResults,
-		AsyncQueryResults:   ds.asyncResults,
-		InFlightQueryName:   queryName,
+		EvaluationMetadata: ds.evaluationMetadata,
+		AsyncQueryResults:  ds.asyncResults,
+		InFlightQueryName:  queryName,
 	}
 	metadataEdn, err := edn.Marshal(metadata)
 	if err != nil {

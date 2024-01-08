@@ -3,10 +3,9 @@ package policy_handler
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
-	"olympos.io/encoding/edn"
+	"github.com/atomist-skills/go-skill/policy/goals"
 )
 
 const eventNameLocalEval = "evaluate_goals_locally"
@@ -20,15 +19,15 @@ func WithLocal() Opt {
 	}
 }
 
-func getLocalSubscriptionData(ctx context.Context, req skill.RequestContext) ([][]edn.RawMessage, skill.Configuration, error) {
+func getLocalSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
 	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
 		return nil, skill.Configuration{}, nil
 	}
 
-	return [][]edn.RawMessage{}, req.Event.Context.Subscription.Configuration, nil
+	return &goals.EvaluationMetadata{}, req.Event.Context.Subscription.Configuration, nil
 }
 
-func buildLocalDataSources(ctx context.Context, req skill.RequestContext) ([]data.DataSource, error) {
+func buildLocalDataSources(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
 	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
 		return []data.DataSource{}, nil
 	}

@@ -18,7 +18,7 @@ package goals
 
 import "time"
 
-func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time) GoalEvaluationResultEntity {
+func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time, tx int64) GoalEvaluationResultEntity {
 	return GoalEvaluationResultEntity{
 		Definition:     goalDefinition,
 		Configuration:  goalConfiguration,
@@ -27,5 +27,10 @@ func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefiniti
 		StorageId:      storageId,
 		ConfigHash:     configHash,
 		CreatedAt:      evaluationTs,
+		TransactionCondition: TransactionConditionEntity{
+			Args: map[string]interface{}{"tx-arg": tx},
+			Where: []byte(`[[?entity :goal.result/created-at _ ?tx true]
+			[(< ?tx ?tx-arg)]]`),
+		},
 	}
 }

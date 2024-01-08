@@ -32,7 +32,7 @@ func TestCreateEntitiesFromResult(t *testing.T) {
 
 	evaluationTs := time.Date(2023, 7, 10, 20, 1, 41, 0, time.UTC)
 
-	entity := CreateEntitiesFromResults(resultModel, "test-definition", "test-configuration", "test-image", "storage-id", "config-hash", evaluationTs)
+	entity := CreateEntitiesFromResults(resultModel, "test-definition", "test-configuration", "test-image", "storage-id", "config-hash", evaluationTs, 123)
 
 	if entity.Definition != "test-definition" || entity.Configuration != "test-configuration" || entity.StorageId != "storage-id" || entity.CreatedAt.Format("2006-01-02T15:04:05.000Z") != "2023-07-10T20:01:41.000Z" {
 		t.Errorf("metadata not set correctly")
