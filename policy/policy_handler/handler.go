@@ -94,6 +94,9 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 	for _, provider := range h.dataSourceProviders {
 		ds, err := provider(ctx, req)
 		if err != nil {
+			if err.Error() == "An unexpected error has occurred" {
+				return skill.NewRetryableStatus(fmt.Sprintf("Failed to create data source [%s]", err.Error()))
+			}
 			return skill.NewFailedStatus(fmt.Sprintf("failed to create data source [%s]", err.Error()))
 		}
 		sources = append(sources, ds...)
