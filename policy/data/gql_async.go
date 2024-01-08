@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	b64 "encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -129,7 +130,14 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 		_, _ = io.Copy(buf, r.Body)
 		body := buf.String()
 
-		return nil, fmt.Errorf("async request returned unexpected status %s: %s", r.Status, body)
+		headers := ""
+		if responseHeaderBytes, err := json.Marshal(req.Header); err != nil {
+			headers = "Unable to read headers"
+		} else {
+			headers = string(responseHeaderBytes)
+		}
+
+		return nil, fmt.Errorf("async request returned unexpected status %s - HEADERS: %s BODY: %s", r.Status, headers, body)
 	}
 
 	return &QueryResponse{AsyncRequestMade: true}, nil
