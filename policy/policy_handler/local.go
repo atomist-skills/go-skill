@@ -6,6 +6,7 @@ import (
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
+	"olympos.io/encoding/edn"
 )
 
 const eventNameLocalEval = "evaluate_goals_locally"
@@ -24,7 +25,17 @@ func getLocalSubscriptionData(ctx context.Context, req skill.RequestContext) (*g
 		return nil, skill.Configuration{}, nil
 	}
 
-	return &goals.EvaluationMetadata{}, req.Event.Context.Subscription.Configuration, nil
+	mockCommonSubscriptionData := goals.CommonSubscriptionQueryResult{
+		ImageDigest: "localDigest",
+	}
+	subscriptionData, err := edn.Marshal(mockCommonSubscriptionData)
+	if err != nil {
+		return nil, skill.Configuration{}, err
+	}
+
+	return &goals.EvaluationMetadata{
+		SubscriptionResult: [][]edn.RawMessage{{subscriptionData}},
+	}, req.Event.Context.SyncRequest.Configuration, nil
 }
 
 func buildLocalDataSources(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
