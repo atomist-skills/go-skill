@@ -34,16 +34,16 @@ func TestCreateEntitiesFromResult(t *testing.T) {
 
 	entity := CreateEntitiesFromResults(resultModel, "test-definition", "test-configuration", "test-image", "storage-id", "config-hash", evaluationTs, 123)
 
-	if entity.Definition != "test-definition" || entity.Configuration != "test-configuration" || *entity.StorageId != "storage-id" || entity.CreatedAt.Format("2006-01-02T15:04:05.000Z") != "2023-07-10T20:01:41.000Z" {
+	if entity.Definition != "test-definition" || entity.Configuration != "test-configuration" || entity.StorageId != "storage-id" || entity.CreatedAt.Format("2006-01-02T15:04:05.000Z") != "2023-07-10T20:01:41.000Z" {
 		t.Errorf("metadata not set correctly")
 	}
 
-	if *entity.DeviationCount != 1 {
+	if entity.DeviationCount != 1 {
 		t.Errorf("incorrect number of deviations, expected %d, got %d", 1, entity.DeviationCount)
 	}
 }
 
-func TestNoDataDoesntSetFields(t *testing.T) {
+func TestNoDataSetsRetraction(t *testing.T) {
 	result := `[{:name "CVE-2023-2650", :details {:purl "pkg:alpine/openssl@3.1.0-r4?os_name=alpine&os_version=3.18", :cve "CVE-2023-2650", :severity "HIGH", :fixed-by "3.1.1-r0"} }]`
 
 	resultModel := []GoalEvaluationQueryResult{}
@@ -54,7 +54,7 @@ func TestNoDataDoesntSetFields(t *testing.T) {
 
 	entity := CreateEntitiesFromResults(resultModel, "test-definition", "test-configuration", "test-image", "no-data", "config-hash", evaluationTs, 123)
 
-	if entity.StorageId != nil || entity.DeviationCount != nil {
+	if !entity.StorageId.(RetractionEntity).Retract || !entity.DeviationCount.(RetractionEntity).Retract {
 		t.Errorf("metadata not set correctly")
 	}
 }

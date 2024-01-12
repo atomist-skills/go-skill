@@ -40,13 +40,17 @@ type (
 		Digest       string `edn:"docker.image/digest"`
 	}
 
+	RetractionEntity struct {
+		Retract bool `edn:"retract"`
+	}
+
 	GoalEvaluationResultEntity struct {
 		skill.Entity         `entity-type:"goal/result"`
 		Definition           string                     `edn:"goal.definition/name"`
 		Configuration        string                     `edn:"goal.configuration/name"`
 		Subject              DockerImageEntity          `edn:"goal.result/subject"`
-		DeviationCount       *int                       `edn:"goal.result/deviation-count"`
-		StorageId            *string                    `edn:"goal.result/storage-id"`
+		DeviationCount       interface{}                `edn:"goal.result/deviation-count,omitempty"`
+		StorageId            interface{}                `edn:"goal.result/storage-id,omitempty"`
 		ConfigHash           string                     `edn:"goal.result/config-hash"`
 		CreatedAt            time.Time                  `edn:"goal.result/created-at"`
 		TransactionCondition TransactionConditionEntity `edn:"atomist/tx-iff"`

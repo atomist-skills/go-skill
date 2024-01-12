@@ -20,11 +20,13 @@ import "time"
 
 func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time, tx int64) GoalEvaluationResultEntity {
 	entity := GoalEvaluationResultEntity{
-		Definition:    goalDefinition,
-		Configuration: goalConfiguration,
-		Subject:       DockerImageEntity{Digest: image},
-		ConfigHash:    configHash,
-		CreatedAt:     evaluationTs,
+		Definition:     goalDefinition,
+		Configuration:  goalConfiguration,
+		Subject:        DockerImageEntity{Digest: image},
+		DeviationCount: RetractionEntity{Retract: true},
+		StorageId:      RetractionEntity{Retract: true},
+		ConfigHash:     configHash,
+		CreatedAt:      evaluationTs,
 		TransactionCondition: TransactionConditionEntity{
 			Args: map[string]interface{}{"tx-arg": tx},
 			Where: []byte(`[[?entity :goal.result/created-at _ ?tx true]
@@ -35,8 +37,8 @@ func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefiniti
 	if storageId != "no-data" {
 		deviationCount := len(results)
 
-		entity.DeviationCount = &deviationCount
-		entity.StorageId = &storageId
+		entity.DeviationCount = deviationCount
+		entity.StorageId = storageId
 	}
 
 	return entity
