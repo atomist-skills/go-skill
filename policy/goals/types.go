@@ -65,6 +65,7 @@ type (
 	CommonSubscriptionQueryResult struct {
 		ImageDigest    string          `edn:"docker.image/digest"`
 		ImagePlatforms []ImagePlatform `edn:"docker.image/platform" json:"platforms"`
+		ImageUser      string          `edn:"docker.image/user,omitempty"`
 	}
 
 	EvaluationMetadata struct {
