@@ -39,51 +39,63 @@ type Skill struct {
 	Version   string `edn:"version"`
 }
 
+type EventContextSubscription struct {
+	Name          string             `edn:"name"`
+	Configuration Configuration      `edn:"configuration"`
+	Result        [][]edn.RawMessage `edn:"result"`
+	Metadata      struct {
+		AfterBasisT  int64  `edn:"after-basis-t"`
+		Tx           int64  `edn:"tx"`
+		ScheduleName string `edn:"schedule-name"`
+	} `edn:"metadata"`
+}
+
+type EventContextWebhook struct {
+	Name          string        `edn:"name"`
+	Configuration Configuration `edn:"configuration"`
+	Request       struct {
+		Url     string            `edn:"url"`
+		Body    string            `edn:"body"`
+		Headers map[string]string `edn:"headers"`
+		Tags    []ParameterValue  `edn:"tags"`
+	} `edn:"request"`
+}
+
+type EventContextSyncRequest struct {
+	Name          string         `edn:"name"`
+	Configuration Configuration  `edn:"configuration"`
+	Metadata      edn.RawMessage `edn:"metadata"`
+}
+
+type EventContextAsyncQueryResult struct {
+	Name          string         `edn:"name"`
+	Configuration Configuration  `edn:"configuration"`
+	Metadata      string         `edn:"metadata"`
+	Result        edn.RawMessage `edn:"result"`
+}
+
+type EventContextEvent struct {
+	Name     string                         `edn:"name"`
+	Metadata map[edn.Keyword]edn.RawMessage `edn:"metadata"`
+}
+
+type EventContext struct {
+	Subscription     EventContextSubscription     `edn:"subscription"`
+	Webhook          EventContextWebhook          `edn:"webhook"`
+	SyncRequest      EventContextSyncRequest      `edn:"sync-request"`
+	AsyncQueryResult EventContextAsyncQueryResult `edn:"query-result"`
+	Event            EventContextEvent            `edn:"event"`
+}
+
 type EventIncoming struct {
-	ExecutionId  string      `edn:"execution-id"`
-	Skill        Skill       `edn:"skill"`
-	Type         edn.Keyword `edn:"type"`
-	WorkspaceId  string      `edn:"workspace-id"`
-	Environment  string      `edn:"environment,omitempty"`
-	Organization string      `edn:"organization,omitempty"`
-	Context      struct {
-		Subscription struct {
-			Name          string             `edn:"name"`
-			Configuration Configuration      `edn:"configuration"`
-			Result        [][]edn.RawMessage `edn:"result"`
-			Metadata      struct {
-				AfterBasisT  int64  `edn:"after-basis-t"`
-				Tx           int64  `edn:"tx"`
-				ScheduleName string `edn:"schedule-name"`
-			} `edn:"metadata"`
-		} `edn:"subscription"`
-		Webhook struct {
-			Name          string        `edn:"name"`
-			Configuration Configuration `edn:"configuration"`
-			Request       struct {
-				Url     string            `edn:"url"`
-				Body    string            `edn:"body"`
-				Headers map[string]string `edn:"headers"`
-				Tags    []ParameterValue  `edn:"tags"`
-			} `edn:"request"`
-		} `edn:"webhook"`
-		SyncRequest struct {
-			Name          string                         `edn:"name"`
-			Configuration Configuration                  `edn:"configuration"`
-			Metadata      map[edn.Keyword]edn.RawMessage `edn:"metadata"`
-		} `edn:"sync-request"`
-		AsyncQueryResult struct {
-			Name          string         `edn:"name"`
-			Configuration Configuration  `edn:"configuration"`
-			Metadata      string         `edn:"metadata"`
-			Result        edn.RawMessage `edn:"result"`
-		} `edn:"query-result"`
-		Event struct {
-			Name     string                         `edn:"name"`
-			Metadata map[edn.Keyword]edn.RawMessage `edn:"metadata"`
-		} `edn:"event"`
-	} `edn:"context"`
-	Urls struct {
+	ExecutionId  string       `edn:"execution-id"`
+	Skill        Skill        `edn:"skill"`
+	Type         edn.Keyword  `edn:"type"`
+	WorkspaceId  string       `edn:"workspace-id"`
+	Environment  string       `edn:"environment,omitempty"`
+	Organization string       `edn:"organization,omitempty"`
+	Context      EventContext `edn:"context"`
+	Urls         struct {
 		Execution    string `edn:"execution"`
 		Logs         string `edn:"logs"`
 		Transactions string `edn:"transactions"`
