@@ -22,12 +22,12 @@ func WithLocal() Opt {
 	return func(h *EventHandler) {
 		h.subscriptionNames = append(h.subscriptionNames, eventNameLocalEval)
 		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getLocalSubscriptionData)
-		h.dataSourceProviders = append(h.dataSourceProviders, buildLocalDataSources)
+		h.dataSourceProviders = append([]dataSourceProvider{buildLocalDataSources}, h.dataSourceProviders...)
 		h.transactFilters = append(h.transactFilters, shouldTransactLocal)
 	}
 }
 
-func getLocalSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
+func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
 	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
 		return nil, skill.Configuration{}, nil
 	}
@@ -45,7 +45,7 @@ func getLocalSubscriptionData(ctx context.Context, req skill.RequestContext) (*g
 	}, req.Event.Context.SyncRequest.Configuration, nil
 }
 
-func buildLocalDataSources(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
+func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goals.EvaluationMetadata) ([]data.DataSource, error) {
 	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
 		return []data.DataSource{}, nil
 	}
@@ -80,6 +80,6 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, evalMe
 	}, nil
 }
 
-func shouldTransactLocal(ctx context.Context, req skill.RequestContext) bool {
+func shouldTransactLocal(_ context.Context, req skill.RequestContext) bool {
 	return req.Event.Context.SyncRequest.Name != eventNameLocalEval
 }
