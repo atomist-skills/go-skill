@@ -146,11 +146,18 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
 	evaluationTs := time.Now().UTC()
 
-	goalResults, err := evaluator.EvaluateGoal(ctx, req, commonResults, subscriptionResult)
+	evaluationResult, err := evaluator.EvaluateGoal(ctx, req, commonResults, subscriptionResult)
 	if err != nil {
 		req.Log.Errorf("Failed to evaluate goal %s for digest %s: %s", goal.Definition, digest, err.Error())
 		return skill.NewFailedStatus("Failed to evaluate goal")
 	}
+
+	if !evaluationResult.EvaluationCompleted {
+		req.Log.Info("evaluation incomplete")
+		return skill.NewCompletedStatus("Evaluation incomplete")
+	}
+
+	goalResults := evaluationResult.Result
 
 	for _, f := range h.transactFilters {
 		if !f(ctx, req) {

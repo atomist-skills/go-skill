@@ -77,6 +77,11 @@ type (
 	}
 
 	GoalEvaluator interface {
-		EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) ([]GoalEvaluationQueryResult, error)
+		EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) (EvaluationResult, error)
+	}
+
+	EvaluationResult struct {
+		EvaluationCompleted bool
+		Result              []GoalEvaluationQueryResult
 	}
 )
