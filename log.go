@@ -235,7 +235,14 @@ func sanitizeEvent(incoming string) string {
 		match, _ := regexp.MatchString("(?i)token|password|jwt|url|secret|authorization|key|cert|pass|user|address|email|pat", name)
 		if match {
 			value := incoming[res[i][4]:res[i][5]]
-			newValue := value[0:1] + strings.Repeat("*", len(value)-2) + value[len(value)-1:]
+			var newValue string
+
+			if len(value) < 2 {
+				newValue = "*"
+			} else {
+				newValue = value[0:1] + strings.Repeat("*", len(value)-2) + value[len(value)-1:]
+			}
+
 			incoming = incoming[0:res[i][4]] + newValue + incoming[res[i][5]:]
 		}
 	}
