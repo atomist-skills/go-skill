@@ -67,6 +67,18 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 			ctx: ctx,
 		}
 
+		defer func() {
+			if err := recover(); err != nil {
+				sendStatus(ctx, req, Status{
+					State:  Failed,
+					Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
+				})
+				w.WriteHeader(201)
+				logger.Errorf("Unhandled error occurred: %v", err)
+				return
+			}
+		}()
+
 		start := time.Now()
 		logger.Debugf("Skill execution started")
 		logger.Debugf("Incoming event message: %s", sanitizeEvent(body))
@@ -78,18 +90,6 @@ func createHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		if handle, ok := handlers[name]; ok {
 			logger.Debugf("Invoking event handler '%s'", name)
-
-			defer func() {
-				if err := recover(); err != nil {
-					sendStatus(ctx, req, Status{
-						State:  Failed,
-						Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
-					})
-					w.WriteHeader(201)
-					logger.Errorf("Unhandled error occurred: %v", err)
-					return
-				}
-			}()
 
 			err = sendStatus(ctx, req, Status{
 				State: running,

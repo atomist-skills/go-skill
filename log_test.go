@@ -81,3 +81,12 @@ func TestSanitizeEvent(t *testing.T) {
 		t.Errorf("token not sanitized")
 	}
 }
+
+func TestSanitizeEventWithSingleCharacterUser(t *testing.T) {
+	var payload = "{:execution-id \"855f5639-8627-4bf2-86e8-51346019ddcb.iStU3P05jAeiKAJ7pnXfg\", :skill {:namespace \"atomist\", :name \"go-sample-skill\", :version \"0.1.0-100\"}, :workspace-id \"T29E48P34\", :type :subscription, :context {:subscription {:name \"on_push\", :configuration {:name \"go_sample_skill\", :parameters [{:name \"repoFilter\", :value {}} {:name \"on_webhook\", :value ({:name \"on_webhook-0\", :url \"https://webhook.atomist.com/atomist/resource/b36b6db3-7d73-442b-9809-626a9ce036d0\"})}]}, :result ([{:git.commit/repo {:git.repo/name \"go-sample-skill\", :git.repo/source-id \"490643782\", :git.repo/default-branch \"main\", :git.repo/org {:github.org/installation-token \"ghs_H9bCqKtdsdfsfsdfsfsfsfQ8BeD6iWrSGM4RfYZm\", :git.org/name \"atomist-skills\", :git.provider/url \"https://github.com\"}}, :git.commit/author {:git.user/name \"0\", :git.user/login \"atomist[bot]\", :git.user/emails [{:email.email/address \"22779605+atomist[bot]@users.noreply.github.com\"}]}, :git.commit/sha \"8969fcce08a2869affc001a05fd8471bcf92b28f\", :git.commit/message \"Auto-merge pull request #21 from atomist-skills/go-sample-skill\", :git.ref/refs [{:git.ref/name \"main\", :git.ref/type {:db/id 83562883711320, :db/ident :git.ref.type/branch}}]}]), :metadata {:after-basis-t 4354969, :tx 13194143888281}, :after-basis-t 4354969, :tx 13194143888281}}, :urls {:execution \"https://api.atomist.com/executions/855f5639-8627-4bf2-86e8-51346019ddcb.iStU3P05jAeiKAJ7pnXfg\", :logs \"https://api.atomist.com/executions/855f5639-8627-4bf2-86e8-51346019ddcb.iStU3P05jAeiKAJ7pnXfg/logs\", :transactions \"https://api.atomist.com/executions/855f5639-8627-4bf2-86e8-51346019ddcb.iStU3P05jAeiKAJ7pnXfg/transactions\", :query \"https://api.atomist.com/datalog/team/T29E48P34/queries\"}, :token \"eyJhbGciOiJSUzI1NiOGd_6YHE8ud8GsBMy4E\"}"
+	sanitizedEvent := sanitizeEvent(payload)
+
+	if strings.Contains(sanitizedEvent, "\"0\"") {
+		t.Errorf("user not sanitised")
+	}
+}
