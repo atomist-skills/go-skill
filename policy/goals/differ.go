@@ -35,7 +35,7 @@ func GoalResultsDiffer(log skill.Logger, queryResults []GoalEvaluationQueryResul
 }
 
 func isRelevantParam(str string) bool {
-	irrelevantParams := []string{"definitionName", "displayName", "description"}
+	irrelevantParams := []string{"definitionName", "displayName", "description", "remediationLink", "resultType", "detailsOrder"}
 	for _, v := range irrelevantParams {
 		if v == str {
 			return false
