@@ -5,14 +5,20 @@ go 1.19
 require (
 	cloud.google.com/go/logging v1.8.1
 	cloud.google.com/go/storage v1.31.0
+	github.com/google/go-containerregistry v0.18.0
 	github.com/google/uuid v1.3.1
 	github.com/hasura/go-graphql-client v0.9.3
 	github.com/mitchellh/hashstructure/v2 v2.0.1
-	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/sirupsen/logrus v1.9.3
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.13.0
 	google.golang.org/api v0.147.0
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3
+)
+
+require (
+	github.com/kr/text v0.2.0 // indirect
+	github.com/package-url/packageurl-go v0.1.1 // indirect
 )
 
 require (
@@ -28,7 +34,8 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.1 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
-	github.com/klauspost/compress v1.10.3 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
+	github.com/openvex/go-vex v0.2.5
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect

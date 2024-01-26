@@ -2,11 +2,12 @@ package policy_handler
 
 import (
 	"context"
+	"testing"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/stretchr/testify/assert"
 	"olympos.io/encoding/edn"
-	"testing"
 )
 
 type TestQueryResultFields struct {
