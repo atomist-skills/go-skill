@@ -30,6 +30,8 @@ func MockImagePackagesByDigestForLocalEval(sb *types.SBOM) ImagePackagesByDigest
 					Severity: &v.Cvss.Severity,
 					Score:    &v.Cvss.Score,
 				},
+				PublishedAt:     v.PublishedAt,
+				UpdatedAt:       v.UpdatedAt,
 				FixedBy:         &v.FixedBy,
 				Source:          v.Source,
 				SourceID:        v.SourceId,

@@ -41,6 +41,8 @@ type Vulnerability struct {
 	VulnerableRange string `graphql:"vulnerableRange" json:"vulnerable_range,omitempty"`
 	FixedBy         string `graphql:"fixedBy" json:"fixed_by,omitempty"`
 	Url             string `graphql:"url" json:"url,omitempty"`
+	PublishedAt     string `graphql:"publishedAt" json:"published_at,omitempty"`
+	UpdatedAt       string `graphql:"updatedAt" json:"updated_at,omitempty"`
 	Cvss            struct {
 		Score    float32 `graphql:"score" json:"score,omitempty"`
 		Severity string  `graphql:"severity" json:"severity,omitempty"`
