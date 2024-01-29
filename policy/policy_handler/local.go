@@ -3,10 +3,12 @@ package policy_handler
 import (
 	"context"
 	"fmt"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/policy_handler/legacy"
+	"github.com/atomist-skills/go-skill/policy/types"
 	"olympos.io/encoding/edn"
 )
 
@@ -16,6 +18,7 @@ type SyncRequestMetadata struct {
 	QueryResults map[edn.Keyword]edn.RawMessage `edn:"fixedQueryResults"`
 	Packages     []legacy.Package               `edn:"packages"`      // todo remove when no longer used
 	User         string                         `edn:"imgConfigUser"` // The user from the image config blob // todo remove when no longer used
+	SBOM         *types.SBOM                    `edn:"sbom"`
 }
 
 func WithLocal() Opt {
@@ -54,6 +57,10 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 	err := edn.Unmarshal(req.Event.Context.SyncRequest.Metadata, &srMeta)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal SyncRequest metadata: %w", err)
+	}
+
+	if srMeta.SBOM != nil {
+		srMeta.QueryResults = legacy.BuildLocalEvalMocks(srMeta.SBOM)
 	}
 
 	fixedQueryResults := map[string][]byte{}
