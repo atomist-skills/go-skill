@@ -1,11 +1,12 @@
 package legacy
 
 import (
+	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/types"
 	"olympos.io/encoding/edn"
 )
 
-func BuildLocalEvalMocks(sb *types.SBOM) map[edn.Keyword]edn.RawMessage {
+func BuildLocalEvalMocks(sb *types.SBOM, log skill.Logger) map[edn.Keyword]edn.RawMessage {
 	m := map[edn.Keyword]edn.RawMessage{}
 	if sb == nil {
 		return m
@@ -17,8 +18,8 @@ func BuildLocalEvalMocks(sb *types.SBOM) map[edn.Keyword]edn.RawMessage {
 		m[GetUserQueryName], _ = edn.Marshal(MockGetUserForLocalEval(sb.Source.Image.Config.Config.User))
 	}
 
-	if sb.Source.Provenance != nil {
-		m[GetInTotoAttestationsQueryName], _ = edn.Marshal(MockGetInTotoAttestationsForLocalEval(sb))
+	if len(sb.Attestations) > 0 {
+		m[GetInTotoAttestationsQueryName], _ = edn.Marshal(MockGetInTotoAttestationsForLocalEval(sb, log))
 	}
 
 	return m

@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/types"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"olympos.io/encoding/edn"
@@ -91,7 +92,7 @@ func Test_BuildLocalEvalMocks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildLocalEvalMocks(tt.args.sb); !reflect.DeepEqual(got, tt.want) {
+			if got := BuildLocalEvalMocks(tt.args.sb, skill.Logger{}); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildLocalEvalMocks() = %v, want %v", got, tt.want)
 			}
 		})

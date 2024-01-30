@@ -60,7 +60,7 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 	}
 
 	if srMeta.SBOM != nil {
-		srMeta.QueryResults = legacy.BuildLocalEvalMocks(srMeta.SBOM)
+		srMeta.QueryResults = legacy.BuildLocalEvalMocks(srMeta.SBOM, req.Log)
 	}
 
 	fixedQueryResults := map[string][]byte{}

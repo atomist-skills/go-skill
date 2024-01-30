@@ -1,6 +1,9 @@
 package types
 
-import v1 "github.com/google/go-containerregistry/pkg/v1"
+import (
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+)
 
 type SBOM struct {
 	Source          Source                  `json:"source"`
@@ -8,6 +11,7 @@ type SBOM struct {
 	Vulnerabilities []VulnerabilitiesByPurl `json:"vulnerabilities,omitempty"`
 	Secrets         []Secret                `json:"secrets,omitempty"`
 	Descriptor      Descriptor              `json:"descriptor"`
+	Attestations    []dsse.Envelope         `json:"attestations,omitempty"`
 }
 
 type Source struct {
