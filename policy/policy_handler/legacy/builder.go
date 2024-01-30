@@ -17,6 +17,10 @@ func BuildLocalEvalMocks(sb *types.SBOM) map[edn.Keyword]edn.RawMessage {
 		m[GetUserQueryName], _ = edn.Marshal(MockGetUserForLocalEval(sb.Source.Image.Config.Config.User))
 	}
 
+	if sb.Source.Provenance != nil {
+		m[GetInTotoAttestationsQueryName], _ = edn.Marshal(MockGetInTotoAttestationsForLocalEval(sb))
+	}
+
 	return m
 }
 
