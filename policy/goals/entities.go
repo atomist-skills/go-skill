@@ -18,13 +18,13 @@ package goals
 
 import "time"
 
-func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time, tx int64) GoalEvaluationResultEntity {
+func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefinition string, goalConfiguration string, image string, storageId string, configHash string, evaluationTs time.Time, tx int64, retract bool) GoalEvaluationResultEntity {
 	entity := GoalEvaluationResultEntity{
 		Definition:     goalDefinition,
 		Configuration:  goalConfiguration,
 		Subject:        DockerImageEntity{Digest: image},
-		DeviationCount: RetractionEntity{Retract: true},
-		StorageId:      RetractionEntity{Retract: true},
+		DeviationCount: nil,
+		StorageId:      nil,
 		ConfigHash:     configHash,
 		CreatedAt:      evaluationTs,
 		TransactionCondition: TransactionConditionEntity{
@@ -39,6 +39,9 @@ func CreateEntitiesFromResults(results []GoalEvaluationQueryResult, goalDefiniti
 
 		entity.DeviationCount = deviationCount
 		entity.StorageId = storageId
+	} else if retract {
+		entity.DeviationCount = RetractionEntity{Retract: true}
+		entity.StorageId = RetractionEntity{Retract: true}
 	}
 
 	return entity

@@ -197,8 +197,8 @@ func transact(
 	tx int64,
 ) skill.Status {
 	storageTuple := util.Decode[[]string](subscriptionResult[0][1])
-	storageId := storageTuple[0]
-	configHash := storageTuple[1]
+	previousStorageId := storageTuple[0]
+	previousConfigHash := storageTuple[1]
 
 	if goalResults == nil {
 		req.Log.Infof("goal %s returned no data for digest %s", goal.Definition, digest)
@@ -209,14 +209,14 @@ func transact(
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create evaluation storage: %s", err.Error()))
 	}
 
-	configDiffer, configHash, err := goals.GoalConfigsDiffer(req.Log, configuration, digest, goal, configHash)
+	configDiffer, configHash, err := goals.GoalConfigsDiffer(req.Log, configuration, digest, goal, previousConfigHash)
 	if err != nil {
 		req.Log.Errorf("Failed to check if config hash changed for digest: %s", digest, err)
 		req.Log.Warnf("Will continue with the evaluation nonetheless")
 		configDiffer = true
 	}
 
-	differ, storageId, err := goals.GoalResultsDiffer(req.Log, goalResults, digest, goal, storageId)
+	differ, storageId, err := goals.GoalResultsDiffer(req.Log, goalResults, digest, goal, previousStorageId)
 	if err != nil {
 		req.Log.Errorf("Failed to check if goal results changed for digest: %s", digest, err)
 		req.Log.Warnf("Will continue with the evaluation nonetheless")
@@ -231,7 +231,8 @@ func transact(
 
 	var entities []interface{}
 	if differ || configDiffer {
-		entity := goals.CreateEntitiesFromResults(goalResults, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs, tx)
+		shouldRetract := previousStorageId != "no-data" && previousStorageId != "n/a" && storageId == "no-data"
+		entity := goals.CreateEntitiesFromResults(goalResults, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs, tx, shouldRetract)
 		entities = append(entities, entity)
 	}
 
