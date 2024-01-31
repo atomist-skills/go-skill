@@ -29,7 +29,7 @@ type ImageAttestationQueryResult struct {
 }
 
 type Subject struct {
-	PredicateType *string     `edn:"intoto.predicate/type"`
+	PredicateType *string     `edn:"intoto.attestation/predicate-type"`
 	Predicates    []Predicate `edn:"intoto.predicate/_attestation"`
 }
 
