@@ -71,17 +71,11 @@ func MockGetInTotoAttestationsForLocalEval(sb *types.SBOM, log skill.Logger) Ima
 			PredicateType: &statement.PredicateType,
 		}
 
-		if statement.PredicateType == ProvenancePredicateType {
-			pr, err := decodeProvenance(statement.Predicate)
-			if err != nil {
-				log.Errorf("Failed to decode provenance predicate: %+v", err)
-				continue
-			}
-
-			if step0, found := pr.Metadata.Buildkit.Source.Locations["step0"]; found && len(step0.Locations) > 0 {
-				ranges := step0.Locations[0].Ranges
-				if len(ranges) > 0 {
-					subject.Predicates = []Predicate{{StartLine: &ranges[0].Start.Line}}
+		if statement.PredicateType == ProvenancePredicateType && sb.Source.Provenance != nil && sb.Source.Provenance.SourceMap != nil {
+			for _, i := range sb.Source.Provenance.SourceMap.Instructions {
+				if i.Instruction == "FROM_RUNTIME" {
+					subject.Predicates = []Predicate{{StartLine: &i.StartLine}}
+					break
 				}
 			}
 		}
@@ -173,12 +167,4 @@ type llbDefinition struct {
 			Variant      string `json:"Variant"`
 		}
 	} `json:"op"`
-}
-
-func decodeProvenance(dt []byte) (s *provenanceDocument, err error) {
-	var stmt provenanceDocument
-	if err = json.Unmarshal(dt, &stmt); err != nil {
-		return nil, err
-	}
-	return &stmt, nil
 }

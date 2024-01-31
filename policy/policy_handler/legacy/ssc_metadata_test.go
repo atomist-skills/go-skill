@@ -59,6 +59,16 @@ func TestMockGetInTotoAttestationsForLocalEval(t *testing.T) {
 						Image: &types.ImageSource{
 							Digest: *digest,
 						},
+						Provenance: &types.Provenance{
+							SourceMap: &types.SourceMap{
+								Instructions: []types.InstructionSourceMap{ // this instruction indicates max-mode provenance
+									{
+										Instruction: "FROM_RUNTIME",
+										StartLine:   1,
+									},
+								},
+							},
+						},
 					},
 					Attestations: []dsse.Envelope{
 						{
