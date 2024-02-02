@@ -74,6 +74,7 @@ func MockGetInTotoAttestationsForLocalEval(sb *types.SBOM, log skill.Logger) Ima
 		if statement.PredicateType == ProvenancePredicateType && sb.Source.Provenance != nil && sb.Source.Provenance.SourceMap != nil {
 			for _, i := range sb.Source.Provenance.SourceMap.Instructions {
 				if i.Instruction == "FROM_RUNTIME" {
+					log.Infof("Found max-mode provenance instruction: %+v", i)
 					subject.Predicates = []Predicate{{StartLine: &i.StartLine}}
 					break
 				}
@@ -82,6 +83,8 @@ func MockGetInTotoAttestationsForLocalEval(sb *types.SBOM, log skill.Logger) Ima
 
 		subjects = append(subjects, subject)
 	}
+
+	log.Infof("Subjects: %+v", subjects)
 
 	return ImageAttestationQueryResult{
 		Digest:   &sb.Source.Image.Digest,
