@@ -1,16 +1,18 @@
 package policy_handler
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/policy_handler/legacy"
 	"github.com/atomist-skills/go-skill/policy/types"
+	"io"
 	"olympos.io/encoding/edn"
 )
 
@@ -21,6 +23,8 @@ type SyncRequestMetadata struct {
 	Packages     []legacy.Package               `edn:"packages"`      // todo remove when no longer used
 	User         string                         `edn:"imgConfigUser"` // The user from the image config blob // todo remove when no longer used
 	SBOM         string                         `edn:"sbom"`
+	ContentType  string                         `edn:"contentType"`
+	Encoding     string                         `edn:"encoding"`
 }
 
 func WithLocal() Opt {
@@ -61,22 +65,30 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 		return nil, fmt.Errorf("failed to unmarshal SyncRequest metadata: %w", err)
 	}
 
-	req.Log.Infof("SBOM from SyncRequest metadata: %+v", srMeta.SBOM)
 	if srMeta.SBOM != "" {
-		req.Log.Infof("Base64-decoding SBOM from SyncRequest metadata")
 		decodedSBOM, err := base64.StdEncoding.DecodeString(srMeta.SBOM)
 		if err != nil {
 			return nil, fmt.Errorf("failed to base64-decode SBOM: %w", err)
 		}
-		req.Log.Infof("Unmarshalling SBOM from SyncRequest metadata: %s", string(decodedSBOM))
+		if srMeta.Encoding == "base64+gzip" {
+			reader := bytes.NewReader(decodedSBOM)
+			gzreader, err := gzip.NewReader(reader)
+			defer gzreader.Close() //nolint:errcheck
+			if err != nil {
+				return nil, fmt.Errorf("failed to decompress SBOM: %w", err)
+			}
+			decodedSBOM, err = io.ReadAll(gzreader)
+			if err != nil {
+				return nil, fmt.Errorf("failed to base64-decode SBOM: %w", err)
+			}
+		}
+
 		var sbom *types.SBOM
 		// THE SBOM is a JSON here, not edn?!!
 		if err := json.Unmarshal(decodedSBOM, &sbom); err != nil {
-			req.Log.Infof("failed to unmarshal SBOM: %s", err)
 			return nil, fmt.Errorf("failed to unmarshal SBOM: %w", err)
 		}
 		srMeta.QueryResults = legacy.BuildLocalEvalMocks(sbom, req.Log)
-		req.Log.Infof("mocked query results: %+v", srMeta.QueryResults)
 	}
 
 	fixedQueryResults := map[string][]byte{}

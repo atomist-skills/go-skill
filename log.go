@@ -28,16 +28,17 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
 	"github.com/atomist-skills/go-skill/internal"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2/google"
 	"olympos.io/encoding/edn"
 )
 
 var (
-	Log       *logrus.Logger
-	projectID string
+	Log        *logrus.Logger
+	projectID  string
+	instanceID string
 )
 
 func init() {
@@ -61,14 +62,8 @@ func init() {
 
 	// try to obtain the GCP project id
 	if _, ok := os.LookupEnv("K_SERVICE"); ok {
-		ctx := context.Background()
-		credentials, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/compute")
-		if err == nil {
-			Log.Debugf("Found project id %s", credentials.ProjectID)
-			projectID = credentials.ProjectID
-		} else {
-			Log.Warnf("Failed to obtain project id: %s", err)
-		}
+		projectID, _ = metadata.ProjectID()
+		instanceID, _ = metadata.InstanceID()
 	}
 }
 
@@ -115,7 +110,7 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 
 	var doLog = func(msg string, level edn.Keyword) {
 		// Don't send logs when evaluating policies locally
-		if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
+		if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" || event.Type == "sync-request" {
 			return
 		}
 		bs, err := edn.MarshalPPrint(internal.LogBody{Logs: []internal.LogEntry{{
@@ -152,6 +147,7 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		labels["skill_namespace"] = event.Skill.Namespace
 		labels["skill_version"] = event.Skill.Version
 		labels["workspace_id"] = event.WorkspaceId
+		labels["instance_id"] = instanceID
 	}
 
 	var doGcpLog = func(msg string, level edn.Keyword) {

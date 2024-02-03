@@ -90,9 +90,17 @@ func Test_BuildLocalEvalMocks(t *testing.T) {
 			},
 		},
 	}
+
+	logger := skill.Logger{
+		Info: func(msg string) {},
+		Infof: func(format string, a ...any) {
+
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildLocalEvalMocks(tt.args.sb, skill.Logger{}); !reflect.DeepEqual(got, tt.want) {
+			if got := BuildLocalEvalMocks(tt.args.sb, logger); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildLocalEvalMocks() = %v, want %v", got, tt.want)
 			}
 		})
