@@ -4,7 +4,9 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
+
 	"github.com/atomist-skills/go-skill/policy/goals"
+	"github.com/atomist-skills/go-skill/policy/types"
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
@@ -72,6 +74,9 @@ func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
 		}
 
 		metaEdn, err := b64.StdEncoding.DecodeString(req.Event.Context.AsyncQueryResult.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode metadata: %w", err)
+		}
 
 		var metadata data.AsyncResultMetadata
 		err = edn.Unmarshal(metaEdn, &metadata)
@@ -83,6 +88,13 @@ func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
 		err = edn.Unmarshal(req.Event.Context.AsyncQueryResult.Result, &queryResponse)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal async query result: %w", err)
+		}
+		if len(queryResponse.Errors) > 0 {
+			errorMessage := queryResponse.Errors[0].Message
+			if errorMessage == "An unexpected error has occurred" {
+				return nil, fmt.Errorf("async query contained error: %s", errorMessage).(types.RetryableExecutionError)
+			}
+			return nil, fmt.Errorf("async query contained error: %s", errorMessage)
 		}
 		metadata.AsyncQueryResults[metadata.InFlightQueryName] = queryResponse
 

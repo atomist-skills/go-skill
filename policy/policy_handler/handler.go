@@ -11,6 +11,7 @@ import (
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/storage"
+	"github.com/atomist-skills/go-skill/policy/types"
 	"github.com/atomist-skills/go-skill/util"
 	"olympos.io/encoding/edn"
 )
@@ -94,8 +95,8 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 	for _, provider := range h.dataSourceProviders {
 		ds, err := provider(ctx, req, *evaluationMetadata)
 		if err != nil {
-			if err.Error() == "An unexpected error has occurred" {
-				return skill.NewRetryableStatus(fmt.Sprintf("Failed to create data source [%s]", err.Error()))
+			if retryableError, ok := err.(types.RetryableExecutionError); ok {
+				return skill.NewRetryableStatus(fmt.Sprintf("Failed to create data source [%s]", retryableError.Error()))
 			}
 			return skill.NewFailedStatus(fmt.Sprintf("failed to create data source [%s]", err.Error()))
 		}
