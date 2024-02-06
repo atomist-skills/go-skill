@@ -70,6 +70,10 @@ func NewAsyncDataSource(
 }
 
 func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
+	if existingResult, ok := ds.asyncResults[queryName]; ok {
+		return &QueryResponse{}, edn.Unmarshal(existingResult.Data, output)
+	}
+
 	if len(ds.asyncResults) > 0 && !ds.multipleQuerySupport {
 		ds.log.Debugf("skipping async query for query %s due to lack of multipleQuerySupport", queryName)
 		return nil, nil // don't error, in case there is another applicable query executor down-chain
