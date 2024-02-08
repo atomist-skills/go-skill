@@ -92,7 +92,7 @@ func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
 		if len(queryResponse.Errors) > 0 {
 			errorMessage := queryResponse.Errors[0].Message
 			if errorMessage == "An unexpected error has occurred" {
-				return nil, fmt.Errorf("async query contained error: %s", errorMessage).(types.RetryableExecutionError)
+				return nil, types.RetryableExecutionError(fmt.Sprintf("async query contained error: %s", errorMessage))
 			}
 			return nil, fmt.Errorf("async query contained error: %s", errorMessage)
 		}
