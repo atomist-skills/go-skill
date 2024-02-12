@@ -26,8 +26,7 @@ func TestMockGetInTotoAttestationsForLocalEval(t *testing.T) {
 	}
 
 	type args struct {
-		sb  *types.SBOM
-		log skill.Logger
+		sb *types.SBOM
 	}
 	tests := []struct {
 		name string
@@ -102,7 +101,10 @@ func TestMockGetInTotoAttestationsForLocalEval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := MockGetInTotoAttestationsForLocalEval(tt.args.sb, tt.args.log); !reflect.DeepEqual(got, tt.want) {
+			logger := skill.Logger{
+				Infof: func(format string, a ...any) {},
+			}
+			if got := MockGetInTotoAttestationsForLocalEval(tt.args.sb, logger); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MockGetInTotoAttestationsForLocalEval() = %v, want %v", got, tt.want)
 			}
 		})
