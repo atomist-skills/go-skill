@@ -74,6 +74,7 @@ func MockGetInTotoAttestationsForLocalEval(sb *types.SBOM, log skill.Logger) Ima
 		if statement.PredicateType == ProvenancePredicateType && sb.Source.Provenance != nil && sb.Source.Provenance.SourceMap != nil {
 			for _, i := range sb.Source.Provenance.SourceMap.Instructions {
 				if i.Instruction == "FROM_RUNTIME" {
+					log.Infof("Found max-mode provenance instruction: %+v", i)
 					subject.Predicates = []Predicate{{StartLine: &i.StartLine}}
 					break
 				}
@@ -82,6 +83,8 @@ func MockGetInTotoAttestationsForLocalEval(sb *types.SBOM, log skill.Logger) Ima
 
 		subjects = append(subjects, subject)
 	}
+
+	log.Infof("Subjects: %+v", subjects)
 
 	return ImageAttestationQueryResult{
 		Digest:   &sb.Source.Image.Digest,
@@ -100,71 +103,4 @@ func unmarshalInTotoStatement(content []byte) (*intotoStatement, error) {
 		return nil, err
 	}
 	return &stmt, nil
-}
-
-type provenanceDocument struct {
-	Invocation struct {
-		ConfigSource struct {
-			Uri    string `json:"uri"`
-			Digest struct {
-				SHA1 string `json:"sha1"`
-			}
-			EntryPoint string `json:"entryPoint"`
-		} `json:"configSource"`
-		Parameters struct {
-			Args map[string]string `json:"args"`
-		} `json:"parameters"`
-	} `json:"invocation"`
-	BuildConfig struct {
-		DigestMapping map[string]string `json:"digestMapping"`
-		LLBDefinition []llbDefinition   `json:"llbDefinition"`
-	} `json:"buildConfig"`
-	Metadata struct {
-		Buildkit struct {
-			VCS struct {
-				Revision string `json:"revision"`
-				Source   string `json:"source"`
-			} `json:"vcs"`
-			Source struct {
-				Locations map[string]struct {
-					Locations []struct {
-						SourceIndex int `json:"sourceIndex"`
-						Ranges      []struct {
-							Start struct {
-								Line int `json:"line"`
-							} `json:"start"`
-							End struct {
-								Line int `json:"line"`
-							} `json:"end"`
-						} `json:"ranges"`
-					} `json:"locations"`
-				} `json:"locations"`
-				Infos []struct {
-					Path string `json:"filename"`
-					Data string `json:"data"`
-				} `json:"infos"`
-			} `json:"source"`
-			Layers map[string][][]struct {
-				MediaType string `json:"mediaType"`
-				Digest    string `json:"digest"`
-				Size      int    `json:"size"`
-			} `json:"layers"`
-		} `json:"https://mobyproject.org/buildkit@v1#metadata"`
-	} `json:"metadata"`
-}
-
-type llbDefinition struct {
-	ID string `json:"id"`
-	OP struct {
-		OP struct {
-			Source struct {
-				Identifier string `json:"identifier"`
-			} `json:"source"`
-		} `json:"Op"`
-		Platform struct {
-			OS           string `json:"OS"`
-			Architecture string `json:"Architecture"`
-			Variant      string `json:"Variant"`
-		}
-	} `json:"op"`
 }

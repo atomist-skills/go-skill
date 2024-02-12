@@ -7,8 +7,10 @@ import (
 )
 
 func BuildLocalEvalMocks(sb *types.SBOM, log skill.Logger) map[edn.Keyword]edn.RawMessage {
+	log.Info("Building local evaluation mocks")
 	m := map[edn.Keyword]edn.RawMessage{}
 	if sb == nil {
+		log.Info("No SBOM provided, returning empty map")
 		return m
 	}
 
@@ -18,6 +20,7 @@ func BuildLocalEvalMocks(sb *types.SBOM, log skill.Logger) map[edn.Keyword]edn.R
 		m[GetUserQueryName], _ = edn.Marshal(MockGetUserForLocalEval(sb.Source.Image.Config.Config.User))
 	}
 
+	log.Infof("SBOM has %d attestations", len(sb.Attestations))
 	if len(sb.Attestations) > 0 {
 		m[GetInTotoAttestationsQueryName], _ = edn.Marshal(MockGetInTotoAttestationsForLocalEval(sb, log))
 	}

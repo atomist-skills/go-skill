@@ -1,6 +1,6 @@
 module github.com/atomist-skills/go-skill
 
-go 1.19
+go 1.21.6
 
 require (
 	cloud.google.com/go/logging v1.8.1
@@ -25,7 +25,7 @@ require (
 require (
 	cloud.google.com/go v0.110.8 // indirect
 	cloud.google.com/go/compute v1.23.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3
 	cloud.google.com/go/iam v1.1.2 // indirect
 	cloud.google.com/go/longrunning v0.5.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
