@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"context"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 )

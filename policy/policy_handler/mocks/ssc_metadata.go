@@ -1,4 +1,4 @@
-package legacy
+package mocks
 
 import (
 	"encoding/base64"
@@ -39,7 +39,7 @@ type Predicate struct {
 
 // https://github.com/in-toto/attestation/blob/main/spec/README.md
 // https://github.com/secure-systems-lab/dsse/blob/master/envelope.md
-func MockGetInTotoAttestationsForLocalEval(sb *types.SBOM, log skill.Logger) ImageAttestationQueryResult {
+func MockGetInTotoAttestations(sb *types.SBOM, log skill.Logger) ImageAttestationQueryResult {
 	subjects := []Subject{}
 
 	// The envelope is the outtermost layer of the attestation

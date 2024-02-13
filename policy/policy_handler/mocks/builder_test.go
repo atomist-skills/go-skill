@@ -1,6 +1,7 @@
-package legacy
+package mocks
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -11,6 +12,17 @@ import (
 )
 
 func Test_BuildLocalEvalMocks(t *testing.T) {
+	vulns := []types.VulnerabilitiesByPurl{
+		{
+			Purl: "pkg1",
+			Vulnerabilities: []types.Vulnerability{
+				{
+					Source: "source",
+				},
+			},
+		},
+	}
+
 	type args struct {
 		sb *types.SBOM
 	}
@@ -44,6 +56,7 @@ func Test_BuildLocalEvalMocks(t *testing.T) {
 							Name: "pkg1",
 						},
 					},
+					Vulnerabilities: vulns,
 				},
 			},
 			want: map[edn.Keyword]edn.RawMessage{
@@ -63,6 +76,7 @@ func Test_BuildLocalEvalMocks(t *testing.T) {
 							Name: "pkg1",
 						},
 					},
+					Vulnerabilities: vulns,
 				},
 			},
 			want: map[edn.Keyword]edn.RawMessage{
@@ -83,6 +97,7 @@ func Test_BuildLocalEvalMocks(t *testing.T) {
 							Name: "pkg1",
 						},
 					},
+					Vulnerabilities: vulns,
 				},
 			},
 			want: map[edn.Keyword]edn.RawMessage{
@@ -91,16 +106,23 @@ func Test_BuildLocalEvalMocks(t *testing.T) {
 		},
 	}
 
-	logger := skill.Logger{
-		Info: func(msg string) {},
-		Infof: func(format string, a ...any) {
+	req := skill.RequestContext{
+		Log: skill.Logger{
+			Info: func(msg string) {},
+			Infof: func(format string, a ...any) {
 
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildLocalEvalMocks(tt.args.sb, logger); !reflect.DeepEqual(got, tt.want) {
+			got, err := BuildLocalEvalMocks(context.Background(), req, tt.args.sb)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildLocalEvalMocks() = %v, want %v", got, tt.want)
 			}
 		})

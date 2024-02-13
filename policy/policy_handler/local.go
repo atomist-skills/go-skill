@@ -7,12 +7,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/policy_handler/legacy"
+	"github.com/atomist-skills/go-skill/policy/policy_handler/mocks"
 	"github.com/atomist-skills/go-skill/policy/types"
-	"io"
 	"olympos.io/encoding/edn"
 )
 
@@ -84,11 +86,14 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 		}
 
 		var sbom *types.SBOM
-		// THE SBOM is a JSON here, not edn?!!
+		// THE SBOM is a JSON here, not edn
 		if err := json.Unmarshal(decodedSBOM, &sbom); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal SBOM: %w", err)
 		}
-		srMeta.QueryResults = legacy.BuildLocalEvalMocks(sbom, req.Log)
+		srMeta.QueryResults, err = mocks.BuildLocalEvalMocks(ctx, req, sbom)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build local evaluation mocks: %w", err)
+		}
 	}
 
 	fixedQueryResults := map[string][]byte{}

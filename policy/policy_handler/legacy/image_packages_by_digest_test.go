@@ -2,11 +2,12 @@ package legacy
 
 import (
 	"context"
+	"testing"
+
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/internal/test_util"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type MockDs struct {

@@ -2,6 +2,7 @@ package policy_handler
 
 import (
 	"context"
+
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
 
