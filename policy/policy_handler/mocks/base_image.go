@@ -1,7 +1,9 @@
 package mocks
 
 import (
+	"fmt"
 	"github.com/atomist-skills/go-skill/policy/types"
+	"strings"
 )
 
 const (
@@ -29,8 +31,38 @@ func MockBaseImage(sb *types.SBOM) BaseImageQueryResult {
 		FromReference: &SubscriptionImage{
 			Digest: sb.Source.Provenance.BaseImage.Digest,
 		},
-		FromRepo: nil, // TODO: this data is not present in the SBOM yet
+		FromRepo: parseFromReference(sb),
 		FromTag:  &sb.Source.Provenance.BaseImage.Tag,
+	}
+}
+
+func parseFromReference(sb *types.SBOM) *SubscriptionRepository {
+	// this is registry.com/namespace/repository form
+	// but minified (omits hub.docker.com and library/ if unnecessary)
+	fullName := sb.Source.Provenance.BaseImage.Name
+	if fullName == "" {
+		return nil
+	}
+
+	parts := strings.SplitN(fullName, "/", 3)
+	switch len(parts) {
+	case 1:
+		return &SubscriptionRepository{
+			Host:       "hub.docker.com",
+			Repository: fmt.Sprintf("library/%s", parts[0]),
+		}
+
+	case 2:
+		return &SubscriptionRepository{
+			Host:       "hub.docker.com",
+			Repository: fmt.Sprintf("%s/%s", parts[0], parts[1]),
+		}
+
+	default:
+		return &SubscriptionRepository{
+			Host:       parts[0],
+			Repository: fmt.Sprintf("%s/%s", parts[1], parts[2]),
+		}
 	}
 }
 

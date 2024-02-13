@@ -64,8 +64,5 @@ func BuildLocalEvalMocks(ctx context.Context, req skill.RequestContext, sb *type
 		return m, fmt.Errorf("failed to marshal supported tags mock: %w", err)
 	}
 
-	// TODO: Mock ImagePlatforms from CommonSubscriptionQueryResult (required for atomist/no-stale-base-images)
-	// TODO: Mock packages (required for atomist/license-goal)
-
 	return m, nil
 }
