@@ -67,5 +67,5 @@ func parseFromReference(sb *types.SBOM) *SubscriptionRepository {
 }
 
 func MockSupportedTags(sb *types.SBOM) []string {
-	return []string{} // TODO: query GraphQL for supported tags
+	return nil // TODO: query GraphQL for supported tags
 }
