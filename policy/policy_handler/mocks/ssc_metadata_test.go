@@ -1,4 +1,4 @@
-package legacy
+package mocks
 
 import (
 	"encoding/base64"
@@ -104,7 +104,7 @@ func TestMockGetInTotoAttestationsForLocalEval(t *testing.T) {
 			logger := skill.Logger{
 				Infof: func(format string, a ...any) {},
 			}
-			if got := MockGetInTotoAttestationsForLocalEval(tt.args.sb, logger); !reflect.DeepEqual(got, tt.want) {
+			if got := MockGetInTotoAttestations(tt.args.sb, logger); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MockGetInTotoAttestationsForLocalEval() = %v, want %v", got, tt.want)
 			}
 		})
