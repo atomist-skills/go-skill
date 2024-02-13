@@ -46,5 +46,26 @@ func BuildLocalEvalMocks(ctx context.Context, req skill.RequestContext, sb *type
 		}
 	}
 
+	// Base image
+	if sb.Source.Provenance == nil {
+		req.Log.Info("Skipping base image mock, no provenance in SBOM")
+	} else {
+		baseImageMock := MockBaseImage(sb)
+		m[GetBaseImageQueryName], err = edn.Marshal(baseImageMock)
+		if err != nil {
+			return m, fmt.Errorf("failed to marshal base image mock: %w", err)
+		}
+	}
+
+	// Supported tags
+	supportedTagsMock := MockSupportedTags(sb)
+	m[GetSupportedTagsQueryName], err = edn.Marshal(supportedTagsMock)
+	if err != nil {
+		return m, fmt.Errorf("failed to marshal supported tags mock: %w", err)
+	}
+
+	// TODO: Mock ImagePlatforms from CommonSubscriptionQueryResult (required for atomist/no-stale-base-images)
+	// TODO: Mock packages (required for atomist/license-goal)
+
 	return m, nil
 }
