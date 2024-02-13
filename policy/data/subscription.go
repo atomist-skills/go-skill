@@ -2,8 +2,6 @@ package data
 
 import (
 	"context"
-	"fmt"
-
 	"olympos.io/encoding/edn"
 )
 
@@ -28,8 +26,8 @@ func (ds SubscriptionDataSource) Query(_ context.Context, queryName string, _ st
 		return nil, nil
 	}
 
-	if ix >= len(ds.subscriptionResults) {
-		return nil, fmt.Errorf("can't get subscription query %s (index %d) from result length %d", queryName, ix, len(ds.subscriptionResults))
+	if len(ds.subscriptionResults) == 0 || ix >= len(ds.subscriptionResults[0]) {
+		return nil, nil
 	}
 
 	err := edn.Unmarshal(ds.subscriptionResults[0][ix], output)
