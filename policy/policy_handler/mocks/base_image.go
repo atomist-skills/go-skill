@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	GetBaseImageQueryName     = "get-base-image"
-	GetSupportedTagsQueryName = "get-supported-tags"
+	GetBaseImageQueryName = "get-base-image"
 )
 
 type BaseImageQueryResult struct {
@@ -64,8 +63,4 @@ func parseFromReference(sb *types.SBOM) *SubscriptionRepository {
 			Repository: fmt.Sprintf("%s/%s", parts[1], parts[2]),
 		}
 	}
-}
-
-func MockSupportedTags(sb *types.SBOM) []string {
-	return nil // TODO: query GraphQL for supported tags
 }

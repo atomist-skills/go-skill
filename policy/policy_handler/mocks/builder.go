@@ -57,13 +57,5 @@ func BuildLocalEvalMocks(ctx context.Context, req skill.RequestContext, sb *type
 		}
 	}
 
-	// Supported tags
-	if supportedTagsMock := MockSupportedTags(sb); supportedTagsMock != nil {
-		m[GetSupportedTagsQueryName], err = edn.Marshal(supportedTagsMock)
-		if err != nil {
-			return m, fmt.Errorf("failed to marshal supported tags mock: %w", err)
-		}
-	}
-
 	return m, nil
 }
