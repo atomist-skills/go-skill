@@ -43,9 +43,26 @@ func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goa
 		return nil, skill.Configuration{}, nil
 	}
 
-	mockCommonSubscriptionData := goals.CommonSubscriptionQueryResult{
-		ImageDigest: "localDigest",
+	_, sbom, err := parseMetadata(req)
+	if err != nil {
+		return nil, skill.Configuration{}, err
 	}
+
+	var mockCommonSubscriptionData goals.CommonSubscriptionQueryResult
+	if sbom != nil {
+		mockCommonSubscriptionData = goals.CommonSubscriptionQueryResult{
+			ImageDigest: sbom.Source.Image.Digest,
+			ImagePlatforms: []goals.ImagePlatform{{
+				Architecture: sbom.Source.Image.Platform.Architecture,
+				Os:           sbom.Source.Image.Platform.Os,
+			}},
+		}
+	} else {
+		mockCommonSubscriptionData = goals.CommonSubscriptionQueryResult{
+			ImageDigest: "localDigest",
+		}
+	}
+
 	subscriptionData, err := edn.Marshal(mockCommonSubscriptionData)
 	if err != nil {
 		return nil, skill.Configuration{}, err
@@ -61,39 +78,14 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 		return []data.DataSource{}, nil
 	}
 
-	var srMeta SyncRequestMetadata
-	err := edn.Unmarshal(req.Event.Context.SyncRequest.Metadata, &srMeta)
+	srMeta, sbom, err := parseMetadata(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal SyncRequest metadata: %w", err)
+		return nil, err
 	}
 
-	if srMeta.SBOM != "" {
-		decodedSBOM, err := base64.StdEncoding.DecodeString(srMeta.SBOM)
-		if err != nil {
-			return nil, fmt.Errorf("failed to base64-decode SBOM: %w", err)
-		}
-		if srMeta.Encoding == "base64+gzip" {
-			reader := bytes.NewReader(decodedSBOM)
-			gzreader, err := gzip.NewReader(reader)
-			defer gzreader.Close() //nolint:errcheck
-			if err != nil {
-				return nil, fmt.Errorf("failed to decompress SBOM: %w", err)
-			}
-			decodedSBOM, err = io.ReadAll(gzreader)
-			if err != nil {
-				return nil, fmt.Errorf("failed to base64-decode SBOM: %w", err)
-			}
-		}
-
-		var sbom *types.SBOM
-		// THE SBOM is a JSON here, not edn
-		if err := json.Unmarshal(decodedSBOM, &sbom); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal SBOM: %w", err)
-		}
-		srMeta.QueryResults, err = mocks.BuildLocalEvalMocks(ctx, req, sbom)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build local evaluation mocks: %w", err)
-		}
+	srMeta.QueryResults, err = mocks.BuildLocalEvalMocks(ctx, req, sbom)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build local evaluation mocks: %w", err)
 	}
 
 	fixedQueryResults := map[string][]byte{}
@@ -122,4 +114,41 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 
 func shouldTransactLocal(_ context.Context, req skill.RequestContext) bool {
 	return req.Event.Context.SyncRequest.Name != eventNameLocalEval
+}
+
+func parseMetadata(req skill.RequestContext) (SyncRequestMetadata, *types.SBOM, error) {
+	var srMeta SyncRequestMetadata
+	err := edn.Unmarshal(req.Event.Context.SyncRequest.Metadata, &srMeta)
+	if err != nil {
+		return SyncRequestMetadata{}, nil, fmt.Errorf("failed to unmarshal SyncRequest metadata: %w", err)
+	}
+
+	if srMeta.SBOM == "" {
+		return srMeta, nil, nil
+	}
+
+	decodedSBOM, err := base64.StdEncoding.DecodeString(srMeta.SBOM)
+	if err != nil {
+		return srMeta, nil, fmt.Errorf("failed to base64-decode SBOM: %w", err)
+	}
+	if srMeta.Encoding == "base64+gzip" {
+		reader := bytes.NewReader(decodedSBOM)
+		gzreader, err := gzip.NewReader(reader)
+		defer gzreader.Close() //nolint:errcheck
+		if err != nil {
+			return srMeta, nil, fmt.Errorf("failed to decompress SBOM: %w", err)
+		}
+		decodedSBOM, err = io.ReadAll(gzreader)
+		if err != nil {
+			return srMeta, nil, fmt.Errorf("failed to base64-decode SBOM: %w", err)
+		}
+	}
+
+	var sbom *types.SBOM
+	// THE SBOM is a JSON here, not edn
+	if err := json.Unmarshal(decodedSBOM, &sbom); err != nil {
+		return srMeta, nil, fmt.Errorf("failed to unmarshal SBOM: %w", err)
+	}
+
+	return srMeta, sbom, nil
 }

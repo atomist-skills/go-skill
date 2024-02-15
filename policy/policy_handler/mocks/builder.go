@@ -46,5 +46,16 @@ func BuildLocalEvalMocks(ctx context.Context, req skill.RequestContext, sb *type
 		}
 	}
 
+	// Base image
+	if sb.Source.Provenance == nil {
+		req.Log.Info("Skipping base image mock, no provenance in SBOM")
+	} else {
+		baseImageMock := MockBaseImage(sb)
+		m[GetBaseImageQueryName], err = edn.Marshal(baseImageMock)
+		if err != nil {
+			return m, fmt.Errorf("failed to marshal base image mock: %w", err)
+		}
+	}
+
 	return m, nil
 }
