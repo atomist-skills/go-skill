@@ -11,7 +11,7 @@ type SBOM struct {
 	Vulnerabilities []VulnerabilitiesByPurl `json:"vulnerabilities,omitempty"`
 	Secrets         []Secret                `json:"secrets,omitempty"`
 	Descriptor      Descriptor              `json:"descriptor"`
-	Attestations    []dsse.Envelope         `json:"attestations,omitempty"`
+	Attestations    []dsse.Envelope         `json:"attestations"`
 }
 
 type Source struct {
