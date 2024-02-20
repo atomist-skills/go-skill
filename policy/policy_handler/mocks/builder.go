@@ -37,12 +37,16 @@ func BuildLocalEvalMocks(ctx context.Context, req skill.RequestContext, sb *type
 	}
 
 	// Attestations
-	req.Log.Infof("SBOM has %d attestations", len(sb.Attestations))
-	if len(sb.Attestations) > 0 {
-		attestMock := MockGetInTotoAttestations(sb, req.Log)
-		m[GetInTotoAttestationsQueryName], err = edn.Marshal(attestMock)
-		if err != nil {
-			return m, fmt.Errorf("failed to marshal attestations mock: %w", err)
+	if sb.Attestations == nil {
+		req.Log.Info("No attestations found in SBOM (nil)")
+	} else {
+		req.Log.Infof("SBOM has %d attestations", len(sb.Attestations))
+		if len(sb.Attestations) > 0 {
+			attestMock := MockGetInTotoAttestations(sb, req.Log)
+			m[GetInTotoAttestationsQueryName], err = edn.Marshal(attestMock)
+			if err != nil {
+				return m, fmt.Errorf("failed to marshal attestations mock: %w", err)
+			}
 		}
 	}
 
