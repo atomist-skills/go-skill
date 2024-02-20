@@ -54,6 +54,8 @@ func (gcs *GcsStorage) Store(ctx context.Context, results []goals.GoalEvaluation
 		environmentBucketName = gcs.environment + "-" + gcs.environment
 	}
 
+	log.Infof("Storing results in bucket %s", environmentBucketName)
+
 	bucket := gcs.client.Bucket(environmentBucketName)
 	storageObject := bucket.Object(storageId)
 
