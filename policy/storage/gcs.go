@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/atomist-skills/go-skill/policy/goals"
+	"github.com/atomist-skills/go-skill/util"
 
 	"cloud.google.com/go/storage"
 	"github.com/atomist-skills/go-skill"
@@ -12,9 +13,13 @@ import (
 	"olympos.io/encoding/edn"
 )
 
-const (
-	bucketName = "atm-policy-evaluation-results"
-)
+func getBucketName() string {
+	if util.IsStaging() {
+		return "atm-policy-evaluation-results-staging"
+	}
+
+	return "atm-policy-evaluation-results"
+}
 
 type GcsStorage struct {
 	client      *storage.Client
@@ -30,7 +35,7 @@ func NewGcsStorage(ctx context.Context) (*GcsStorage, error) {
 
 	return &GcsStorage{
 		client:     storageClient,
-		bucketName: bucketName,
+		bucketName: getBucketName(),
 	}, nil
 }
 
