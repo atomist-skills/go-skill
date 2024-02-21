@@ -25,7 +25,7 @@ func MockImagePackagesByDigest(ctx context.Context, req skill.RequestContext, sb
 				Licenses:  a.Licenses,
 			})
 		}
-		res, err := legacy.MockImagePackagesByDigest(ctx, req, pkgs)
+		res, err := legacy.MockImagePackagesByDigest(ctx, req, pkgs, sb)
 		if err != nil {
 			return res, err
 		}
@@ -46,7 +46,7 @@ func MockImagePackagesByDigest(ctx context.Context, req skill.RequestContext, sb
 				UpdatedAt:       v.UpdatedAt,
 				FixedBy:         &v.FixedBy,
 				Source:          v.Source,
-				SourceID:        v.SourceId,
+				SourceId:        v.SourceId,
 				URL:             &v.Url,
 				VulnerableRange: v.VulnerableRange,
 			})
