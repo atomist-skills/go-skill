@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"golang.org/x/oauth2"
 
@@ -13,12 +14,13 @@ import (
 )
 
 type SyncGraphqlDataSource struct {
-	Url            string
-	GraphqlClient  *graphql.Client
-	RequestContext skill.RequestContext
+	Url             string
+	GraphqlClient   *graphql.Client
+	RequestContext  skill.RequestContext
+	queryNameFilter []string
 }
 
-func NewSyncGraphqlDataSource(ctx context.Context, req skill.RequestContext) (SyncGraphqlDataSource, error) {
+func NewSyncGraphqlDataSource(ctx context.Context, req skill.RequestContext, queryNames []string) (SyncGraphqlDataSource, error) {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: req.Event.Token, TokenType: "Bearer"},
 	))
@@ -29,11 +31,16 @@ func NewSyncGraphqlDataSource(ctx context.Context, req skill.RequestContext) (Sy
 			WithRequestModifier(func(r *http.Request) {
 				r.Header.Add("Accept", "application/json")
 			}),
-		RequestContext: req,
+		RequestContext:  req,
+		queryNameFilter: queryNames,
 	}, nil
 }
 
 func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
+	if !slices.Contains(ds.queryNameFilter, queryName) {
+		return nil, nil
+	}
+
 	log := ds.RequestContext.Log
 
 	log.Infof("Graphql endpoint: %s", ds.RequestContext.Event.Urls.Graphql)

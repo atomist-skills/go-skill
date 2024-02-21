@@ -103,7 +103,7 @@ type (
 
 func MockImagePackagesByDigest(ctx context.Context, req skill.RequestContext, sbomPkgs []Package) (ImagePackagesByDigestResponse, error) {
 	// separated for testing
-	ds, err := data.NewSyncGraphqlDataSource(ctx, req)
+	ds, err := data.NewSyncGraphqlDataSource(ctx, req, []string{vulnerabilitiesByPackageQueryName})
 	if err != nil {
 		return ImagePackagesByDigestResponse{}, err
 	}
