@@ -26,10 +26,10 @@ func WithAsyncMultiQuery() Opt {
 	}
 }
 
-// withAsync is enabled by default, added last after all other Opts.
-func withAsync() Opt {
+// WithAsync is enabled by default, added last after all other Opts if not explicitly registered early.
+func WithAsync() Opt {
 	return func(h *EventHandler) {
-		// don't register if WithAsyncMultiQuery is already enabled
+		// don't register if WithAsync / WithAsyncMultiQuery is already enabled
 		for _, s := range h.subscriptionNames {
 			if s == eventNameAsyncQuery {
 				return
@@ -63,7 +63,7 @@ func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) (*g
 
 func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
 	return func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
-		if req.Event.Context.SyncRequest.Name == eventNameLocalEval {
+		if req.Event.Type == "sync-request" {
 			return []data.DataSource{}, nil
 		}
 

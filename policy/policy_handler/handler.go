@@ -42,7 +42,7 @@ type (
 )
 
 var defaultOpts = []Opt{
-	withAsync(),
+	WithAsync(),
 	withSubscription(),
 }
 
