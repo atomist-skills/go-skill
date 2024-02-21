@@ -2,16 +2,18 @@ package types
 
 import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/openvex/go-vex/pkg/vex"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 type SBOM struct {
 	Source          Source                  `json:"source"`
+	Attestations    []dsse.Envelope         `json:"attestations"`
 	Artifacts       []Package               `json:"artifacts"`
 	Vulnerabilities []VulnerabilitiesByPurl `json:"vulnerabilities,omitempty"`
+	VexDocuments    []vex.VEX               `json:"vex_statements,omitempty"`
 	Secrets         []Secret                `json:"secrets,omitempty"`
 	Descriptor      Descriptor              `json:"descriptor"`
-	Attestations    []dsse.Envelope         `json:"attestations"`
 }
 
 type Source struct {
