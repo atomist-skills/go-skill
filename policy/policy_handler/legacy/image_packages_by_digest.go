@@ -151,7 +151,7 @@ func mockImagePackagesByDigest(ctx context.Context, req skill.RequestContext, le
 				VulnerableRange: vv.VulnerableRange,
 			}
 			if vv.FixedBy != "" {
-				*vuln.FixedBy = vv.FixedBy
+				vuln.FixedBy = &vv.FixedBy
 			}
 			vulns = append(vulns, vuln)
 		}

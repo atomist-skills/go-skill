@@ -39,18 +39,20 @@ type VulnerabilitiesByPurl struct {
 	Vulnerabilities []Vulnerability `graphql:"vulnerabilities" json:"vulnerabilities,omitempty"`
 }
 
+// Vulnerability MUST have camel case JSON field names in order for the gql_sync.go to unmarshal it correctly.
+// https://github.com/atomist-skills/go-skill/blob/main/policy/data/gql_sync.go#L50
 type Vulnerability struct {
 	Source          string    `graphql:"source" json:"source,omitempty"`
-	SourceId        string    `graphql:"sourceId" json:"source_id,omitempty"`
+	SourceId        string    `graphql:"sourceId" json:"sourceId,omitempty"`
 	Description     string    `graphql:"description" json:"description,omitempty"`
-	VulnerableRange string    `graphql:"vulnerableRange" json:"vulnerable_range,omitempty"`
-	FixedBy         string    `graphql:"fixedBy" json:"fixed_by,omitempty"`
+	VulnerableRange string    `graphql:"vulnerableRange" json:"vulnerableRange,omitempty"`
+	FixedBy         string    `graphql:"fixedBy" json:"fixedBy,omitempty"`
 	Url             string    `graphql:"url" json:"url,omitempty"`
-	PublishedAt     string    `graphql:"publishedAt" json:"published_at,omitempty"`
-	UpdatedAt       string    `graphql:"updatedAt" json:"updated_at,omitempty"`
+	PublishedAt     string    `graphql:"publishedAt" json:"publishedAt,omitempty"`
+	UpdatedAt       string    `graphql:"updatedAt" json:"updatedAt,omitempty"`
 	Cvss            Cvss      `graphql:"cvss" json:"cvss,omitempty"`
 	Cwes            []Cwe     `graphql:"cwes" json:"cwes,omitempty"`
-	VexStatements   []vex.VEX `graphql:"-" json:"vex_statements,omitempty"`
+	VexStatements   []vex.VEX `graphql:"-" json:"vexStatements,omitempty"`
 }
 
 type Cvss struct {
