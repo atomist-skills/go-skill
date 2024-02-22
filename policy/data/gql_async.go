@@ -94,6 +94,12 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
+	metadata64 := b64.StdEncoding.EncodeToString(metadataEdn)
+	if len(metadata64) > 1024 {
+		ds.log.Warnf("Skipping async data source usage for query %s due to metadata overflow!", queryName)
+		return nil, nil
+	}
+
 	request := AsyncQueryRequest{
 		Name: AsyncQueryName,
 		Body: AsyncQueryBody{
