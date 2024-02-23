@@ -106,7 +106,7 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 			Query:     query,
 			Variables: ednVariables,
 		},
-		Metadata: b64.StdEncoding.EncodeToString(metadataEdn),
+		Metadata: metadata64,
 	}
 
 	reqEdn, err := edn.Marshal(request)
