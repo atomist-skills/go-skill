@@ -7,6 +7,7 @@ import (
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/internal/test_util"
 	"github.com/atomist-skills/go-skill/policy/data"
+	"github.com/atomist-skills/go-skill/policy/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,21 +19,21 @@ func (ds MockDs) Query(ctx context.Context, queryName string, query string, vari
 	assert.Equal(ds.t, queryName, vulnerabilitiesByPackageQueryName)
 	assert.Equal(ds.t, query, vulnerabilitiesByPackageQuery)
 
-	r := output.(*VulnerabilitiesByPackageResponse)
-	r.VulnerabilitiesByPackage = []VulnerabilitiesByPackage{
+	r := output.(*types.VulnerabilitiesByPurls)
+	r.VulnerabilitiesByPackage = []types.VulnerabilitiesByPurl{
 		{
 			Purl: "pkg:deb/ubuntu/libpcre3@2:8.39-12ubuntu0.1?arch=amd64&upstream=pcre3&distro=ubuntu-20.04",
-			Vulnerabilities: []Vulnerability{{
-				Cvss: Cvss{
-					Severity: test_util.Pointer("HIGH"),
-					Score:    test_util.Pointer(float32(7.5)),
+			Vulnerabilities: []types.Vulnerability{{
+				Cvss: types.Cvss{
+					Severity: "HIGH",
+					Score:    float32(7.5),
 				},
-				FixedBy:         nil,
+				FixedBy:         "",
 				PublishedAt:     "2017-07-10T11:29:00Z",
 				Source:          "nist",
-				SourceID:        "CVE-2017-11164",
+				SourceId:        "CVE-2017-11164",
 				UpdatedAt:       "2023-04-12T11:15:00Z", // 2006-01-02T15:04:05Z07:00
-				URL:             test_util.Pointer("https://scout.docker.com/v/CVE-2017-11164"),
+				Url:             "https://scout.docker.com/v/CVE-2017-11164",
 				VulnerableRange: ">=0",
 			}},
 		},
@@ -61,7 +62,11 @@ func Test_mockImagePackagesByDigest(t *testing.T) {
 		},
 	}
 
-	actual, err := mockImagePackagesByDigest(context.TODO(), skill.RequestContext{}, lPkgs, MockDs{t})
+	logger := skill.Logger{
+		Debug:  func(msg string) {},
+		Debugf: func(format string, a ...any) {},
+	}
+	actual, err := mockImagePackagesByDigest(context.TODO(), skill.RequestContext{Log: logger}, lPkgs, MockDs{t}, nil)
 	assert.NoError(t, err)
 
 	expected := ImagePackagesByDigestResponse{
@@ -84,7 +89,7 @@ func Test_mockImagePackagesByDigest(t *testing.T) {
 								FixedBy:         nil,
 								PublishedAt:     "2017-07-10T11:29:00Z",
 								Source:          "nist",
-								SourceID:        "CVE-2017-11164",
+								SourceId:        "CVE-2017-11164",
 								UpdatedAt:       "2023-04-12T11:15:00Z", // 2006-01-02T15:04:05Z07:00
 								URL:             test_util.Pointer("https://scout.docker.com/v/CVE-2017-11164"),
 								VulnerableRange: ">=0",

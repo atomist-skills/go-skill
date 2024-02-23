@@ -29,30 +29,38 @@ type BaseImage struct {
 		Variant string `graphql:"variant"`
 	} `graphql:"platform"`
 }
+
+type VulnerabilitiesByPurls struct {
+	VulnerabilitiesByPackage []VulnerabilitiesByPurl `graphql:"vulnerabilitiesByPackage(context: $context, packageUrls: $purls)"`
+}
+
 type VulnerabilitiesByPurl struct {
 	Purl            string          `graphql:"purl" json:"purl,omitempty"`
 	Vulnerabilities []Vulnerability `graphql:"vulnerabilities" json:"vulnerabilities,omitempty"`
 }
 
+// Vulnerability MUST have camel case JSON field names in order for the gql_sync.go to unmarshal it correctly.
+// https://github.com/atomist-skills/go-skill/blob/main/policy/data/gql_sync.go#L50
 type Vulnerability struct {
-	Source          string `graphql:"source" json:"source,omitempty"`
-	SourceId        string `graphql:"sourceId" json:"source_id,omitempty"`
-	Description     string `graphql:"description" json:"description,omitempty"`
-	VulnerableRange string `graphql:"vulnerableRange" json:"vulnerable_range,omitempty"`
-	FixedBy         string `graphql:"fixedBy" json:"fixed_by,omitempty"`
-	Url             string `graphql:"url" json:"url,omitempty"`
-	PublishedAt     string `graphql:"publishedAt" json:"published_at,omitempty"`
-	UpdatedAt       string `graphql:"updatedAt" json:"updated_at,omitempty"`
-	Cvss            struct {
-		Score    float32 `graphql:"score" json:"score,omitempty"`
-		Severity string  `graphql:"severity" json:"severity,omitempty"`
-		Vector   string  `graphql:"vector" json:"vector,omitempty"`
-		Version  string  `graphql:"version" json:"version,omitempty"`
-	} `graphql:"cvss" json:"cvss,omitempty"`
-	Cwes          []Cwe     `graphql:"cwes" json:"cwes,omitempty"`
-	VexStatements []vex.VEX `graphql:"-" json:"vex_statements,omitempty"`
+	Source          string    `graphql:"source" json:"source,omitempty"`
+	SourceId        string    `graphql:"sourceId" json:"sourceId,omitempty"`
+	Description     string    `graphql:"description" json:"description,omitempty"`
+	VulnerableRange string    `graphql:"vulnerableRange" json:"vulnerableRange,omitempty"`
+	FixedBy         string    `graphql:"fixedBy" json:"fixedBy,omitempty"`
+	Url             string    `graphql:"url" json:"url,omitempty"`
+	PublishedAt     string    `graphql:"publishedAt" json:"publishedAt,omitempty"`
+	UpdatedAt       string    `graphql:"updatedAt" json:"updatedAt,omitempty"`
+	Cvss            Cvss      `graphql:"cvss" json:"cvss,omitempty"`
+	Cwes            []Cwe     `graphql:"cwes" json:"cwes,omitempty"`
+	VexStatements   []vex.VEX `graphql:"-" json:"vexStatements,omitempty"`
 }
 
+type Cvss struct {
+	Score    float32 `graphql:"score" json:"score,omitempty"`
+	Severity string  `graphql:"severity" json:"severity,omitempty"`
+	Vector   string  `graphql:"vector" json:"vector,omitempty"`
+	Version  string  `graphql:"version" json:"version,omitempty"`
+}
 type BaseImageRepository struct {
 	Badge         string   `graphql:"badge" json:"badge,omitempty"`
 	Host          string   `graphql:"hostName" json:"host,omitempty"`

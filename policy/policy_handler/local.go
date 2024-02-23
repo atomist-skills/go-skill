@@ -94,7 +94,7 @@ func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goal
 	}
 
 	if _, ok := fixedQueryResults[legacy.ImagePackagesByDigestQueryName]; !ok && len(srMeta.Packages) != 0 {
-		mockedQueryResult, err := legacy.MockImagePackagesByDigest(ctx, req, srMeta.Packages)
+		mockedQueryResult, err := legacy.MockImagePackagesByDigest(ctx, req, srMeta.Packages, nil)
 		if err != nil {
 			return nil, err
 		}
