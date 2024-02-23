@@ -138,20 +138,26 @@ func mockImagePackagesByDigest(ctx context.Context, req skill.RequestContext, le
 	for _, v := range vulnsResponse.VulnerabilitiesByPackage {
 		vulns := []Vulnerability{}
 		for _, vv := range v.Vulnerabilities {
+
+			severity := vv.Cvss.Severity
+			score := vv.Cvss.Score
+			url := vv.Url
+			fixedBy := vv.FixedBy
+
 			vuln := Vulnerability{
 				Cvss: Cvss{
-					Severity: &vv.Cvss.Severity,
-					Score:    &vv.Cvss.Score,
+					Severity: &severity,
+					Score:    &score,
 				},
 				PublishedAt:     vv.PublishedAt,
 				Source:          vv.Source,
 				SourceId:        vv.SourceId,
 				UpdatedAt:       vv.UpdatedAt,
-				URL:             &vv.Url,
+				URL:             &url,
 				VulnerableRange: vv.VulnerableRange,
 			}
-			if vv.FixedBy != "" {
-				vuln.FixedBy = &vv.FixedBy
+			if fixedBy != "" {
+				vuln.FixedBy = &fixedBy
 			}
 			vulns = append(vulns, vuln)
 		}
