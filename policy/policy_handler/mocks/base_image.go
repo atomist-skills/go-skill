@@ -48,7 +48,7 @@ func parseFromReference(ref string) *SubscriptionRepository {
 	case 1:
 		return &SubscriptionRepository{
 			Host:       "hub.docker.com",
-			Repository: fmt.Sprintf("library/%s", parts[0]),
+			Repository: fmt.Sprintf("%s", parts[0]),
 		}
 
 	case 2:
