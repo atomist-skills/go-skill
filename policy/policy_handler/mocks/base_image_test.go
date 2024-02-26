@@ -24,7 +24,7 @@ func Test_parseFromReference(t *testing.T) {
 			args: args{ref: "nginx"},
 			want: &SubscriptionRepository{
 				Host:       "hub.docker.com",
-				Repository: "library/nginx",
+				Repository: "nginx",
 			},
 		},
 		{
