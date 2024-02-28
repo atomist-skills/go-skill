@@ -17,8 +17,14 @@ type BaseImageQueryResult struct {
 	FromTag       *string                 `edn:"docker.image/from-tag"`
 }
 
+type SubscriptionDistro struct {
+	Name    string `edn:"os.distro/name"`
+	Version string `edn:"os.distro/version"`
+}
+
 type SubscriptionImage struct {
-	Digest string `edn:"docker.image/digest"`
+	Digest string              `edn:"docker.image/digest"`
+	Distro *SubscriptionDistro `edn:"docker.image/distro"`
 }
 
 type SubscriptionRepository struct {
@@ -30,6 +36,7 @@ func MockBaseImage(sb *types.SBOM) BaseImageQueryResult {
 	return BaseImageQueryResult{
 		FromReference: &SubscriptionImage{
 			Digest: sb.Source.Provenance.BaseImage.Digest,
+			Distro: convertDistro(sb.Source.Image.Distro),
 		},
 		FromRepo: parseFromReference(sb.Source.Provenance.BaseImage.Name),
 		FromTag:  &sb.Source.Provenance.BaseImage.Tag,
@@ -63,4 +70,15 @@ func parseFromReference(ref string) *SubscriptionRepository {
 			Repository: fmt.Sprintf("%s/%s", parts[1], parts[2]),
 		}
 	}
+}
+
+func convertDistro(sbDistro types.Distro) *SubscriptionDistro {
+	if sbDistro.OsName != "" && sbDistro.OsVersion != "" {
+		return &SubscriptionDistro{
+			Name:    sbDistro.OsName,
+			Version: sbDistro.OsVersion,
+		}
+	}
+
+	return nil
 }
