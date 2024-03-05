@@ -3,6 +3,7 @@ package policy_handler
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os/user"
 	"strings"
 	"time"
@@ -18,10 +19,6 @@ import (
 
 type (
 	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal goals.Goal, dataSource data.DataSource) (goals.GoalEvaluator, error)
-
-	Handler interface {
-		Start()
-	}
 
 	subscriptionProvider func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error)
 	dataSourceProvider   func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error)
@@ -62,13 +59,25 @@ func NewPolicyEventHandler(subscriptionNames []string, evalSelector EvaluatorSel
 	return p
 }
 
-func (h EventHandler) Start() {
+func (h EventHandler) createSkillHandlers() skill.Handlers {
 	handlers := skill.Handlers{}
 	for _, n := range h.subscriptionNames {
 		handlers[n] = h.handle
 	}
 
+	return handlers
+}
+
+func (h EventHandler) Start() {
+	handlers := h.createSkillHandlers()
+
 	skill.Start(handlers)
+}
+
+func (h EventHandler) CreateHttpHandler() func(http.ResponseWriter, *http.Request) {
+	handlers := h.createSkillHandlers()
+
+	return skill.CreateHttpHandler(handlers)
 }
 
 func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
