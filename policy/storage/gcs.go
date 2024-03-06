@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/util"
@@ -14,6 +15,11 @@ import (
 )
 
 func getBucketName() string {
+	bucket := os.Getenv("POLICY_STORAGE_BUCKET")
+	if bucket != "" {
+		return bucket
+	}
+
 	if util.IsStaging() {
 		return "atm-policy-evaluation-results-staging"
 	}
