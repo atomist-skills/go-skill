@@ -80,6 +80,23 @@ func (h EventHandler) CreateHttpHandler() func(http.ResponseWriter, *http.Reques
 	return skill.CreateHttpHandler(handlers)
 }
 
+func (h EventHandler) ExecuteSyncRequest(ctx context.Context, req skill.RequestContext) ([]goals.GoalEvaluationQueryResult, error) {
+	handlers := h.createSkillHandlers()
+
+	syncHandler, ok := handlers[eventNameLocalEval]
+	if !ok {
+		return nil, fmt.Errorf("no handler for sync request")
+	}
+
+	result := syncHandler(ctx, req)
+
+	if result.State != skill.Completed {
+		return nil, fmt.Errorf("sync request did not complete successfully [%s]", result.Reason)
+	}
+
+	return result.SyncRequest.([]goals.GoalEvaluationQueryResult), nil
+}
+
 func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skill.Status {
 	var (
 		evaluationMetadata *goals.EvaluationMetadata
