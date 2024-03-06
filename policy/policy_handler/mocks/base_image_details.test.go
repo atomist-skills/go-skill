@@ -20,18 +20,18 @@ func (ds MockDs) Query(ctx context.Context, queryName string, query string, vari
 
 	r := output.(*BaseImagesByDigestResponse)
 	r.BaseImagesByDigest.Images = []BaseImage{
-		BaseImage{
+		{
 			Digest: "sha256:1234",
 			Repository: Repository{
 				HostName: "registry.com",
 				RepoName: "namespace/repository",
 			},
 			Tags: []Tag{
-				Tag{
+				{
 					Name:    "latest",
 					Current: true,
 				},
-				Tag{
+				{
 					Name:    "1.0",
 					Current: false,
 				},
@@ -42,7 +42,7 @@ func (ds MockDs) Query(ctx context.Context, queryName string, query string, vari
 	return &data.QueryResponse{}, nil
 }
 
-func Test_mockBaseImageDetails(t *testing.T) {
+func Test_mockBaseImageDetails_isNotCurrent(t *testing.T) {
 	sbom := &types.SBOM{
 		Source: types.Source{
 			Image: &types.ImageSource{
@@ -51,8 +51,7 @@ func Test_mockBaseImageDetails(t *testing.T) {
 			Provenance: &types.Provenance{
 				BaseImage: &types.ProvenanceBaseImage{
 					Digest: "sha256:1234",
-
-					Tag: "1.0",
+					Tag:    "1.0",
 				},
 			},
 		},
@@ -75,11 +74,63 @@ func Test_mockBaseImageDetails(t *testing.T) {
 					RepoName: "namespace/repository",
 				},
 				Tags: []Tag{
-					Tag{
+					{
 						Name:    "latest",
 						Current: true,
 					},
-					Tag{
+					{
+						Name:    "1.0",
+						Current: false,
+					},
+				},
+			},
+			BaseImageTag: &Tag{
+				Name:    "1.0",
+				Current: false,
+			},
+		},
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
+func Test_mockBaseImageDetails_isCurrent(t *testing.T) {
+	sbom := &types.SBOM{
+		Source: types.Source{
+			Image: &types.ImageSource{
+				Digest: "sha256:9999",
+			},
+			Provenance: &types.Provenance{
+				BaseImage: &types.ProvenanceBaseImage{
+					Digest: "sha256:1234",
+					Tag:    "latest",
+				},
+			},
+		},
+	}
+
+	logger := skill.Logger{
+		Debug:  func(msg string) {},
+		Debugf: func(format string, a ...any) {},
+	}
+	actual, err := mockBaseImageDetails(context.TODO(), skill.RequestContext{Log: logger}, sbom, MockDs{t})
+	assert.NoError(t, err)
+
+	expected := ImageDetailsByDigestResponse{
+		ImageDetailsByDigest: &ImageDetailsByDigest{
+			Digest: "sha256:9999",
+			BaseImage: &BaseImage{
+				Digest: "sha256:1234",
+				Repository: Repository{
+					HostName: "registry.com",
+					RepoName: "namespace/repository",
+				},
+				Tags: []Tag{
+					{
+						Name:    "latest",
+						Current: true,
+					},
+					{
 						Name:    "1.0",
 						Current: false,
 					},
