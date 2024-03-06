@@ -12,6 +12,8 @@ import (
 const (
 	ImageDetailsQueryName = "image-details-by-digest"
 
+	baseImagesByDigestQueryName = "base-images-by-digest"
+
 	baseImagesByDigestQuery = `
 	query ($context: Context!, $digest: String!) {
 		baseImagesByDigest(context: $context, digest: $digest) {
@@ -78,12 +80,21 @@ func MockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *typ
 		return ImageDetailsByDigestResponse{}, err
 	}
 
+	return mockBaseImageDetails(ctx, req, sb, ds)
+}
+
+func mockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *types.SBOM, ds data.DataSource) (ImageDetailsByDigestResponse, error) {
+	ds, err := data.NewSyncGraphqlDataSource(ctx, req)
+	if err != nil {
+		return ImageDetailsByDigestResponse{}, err
+	}
+
 	baseImageDigest := sb.Source.Provenance.BaseImage.Digest
 
 	var queryResponse BaseImagesByDigestResponse
 
 	queryVariables := map[string]interface{}{"digest": baseImageDigest}
-	_, err = ds.Query(ctx, "base-images-by-digest", baseImagesByDigestQuery, queryVariables, &queryResponse)
+	_, err = ds.Query(ctx, baseImagesByDigestQueryName, baseImagesByDigestQuery, queryVariables, &queryResponse)
 	if err != nil {
 		return ImageDetailsByDigestResponse{}, err
 	}
