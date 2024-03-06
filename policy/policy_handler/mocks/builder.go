@@ -59,6 +59,14 @@ func BuildLocalEvalMocks(ctx context.Context, req skill.RequestContext, sb *type
 		if err != nil {
 			return m, fmt.Errorf("failed to marshal base image mock: %w", err)
 		}
+		imageDetailsMock, err := MockBaseImageDetails(ctx, req, sb)
+		if err != nil {
+			return m, fmt.Errorf("failed to create image details mock: %w", err)
+		}
+		m[ImageDetailsQueryName], err = edn.Marshal(imageDetailsMock)
+		if err != nil {
+			return m, fmt.Errorf("failed to marshal image details mock: %w", err)
+		}
 	}
 
 	return m, nil
