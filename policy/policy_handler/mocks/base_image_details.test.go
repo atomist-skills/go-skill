@@ -15,26 +15,24 @@ type MockDs struct {
 }
 
 func (ds MockDs) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*data.QueryResponse, error) {
-	assert.Equal(ds.t, queryName, baseImagesByDigestQueryName)
-	assert.Equal(ds.t, query, baseImagesByDigestQuery)
+	assert.Equal(ds.t, queryName, imageDetailsByDigestQueryName)
+	assert.Equal(ds.t, query, imageDetailsByDigestQuery)
 
-	r := output.(*BaseImagesByDigestResponse)
-	r.BaseImagesByDigest.Images = []BaseImage{
-		{
-			Digest: "sha256:1234",
-			Repository: Repository{
-				HostName: "registry.com",
-				RepoName: "namespace/repository",
+	r := output.(*ImageDetailsByDigestResponse)
+	r.ImageDetailsByDigest = &ImageDetailsByDigest{
+		Digest: "sha256:1234",
+		Repository: Repository{
+			HostName: "registry.com",
+			RepoName: "namespace/repository",
+		},
+		Tags: []Tag{
+			{
+				Name:    "latest",
+				Current: true,
 			},
-			Tags: []Tag{
-				{
-					Name:    "latest",
-					Current: true,
-				},
-				{
-					Name:    "1.0",
-					Current: false,
-				},
+			{
+				Name:    "1.0",
+				Current: false,
 			},
 		},
 	}

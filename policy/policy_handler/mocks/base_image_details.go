@@ -12,12 +12,11 @@ import (
 const (
 	ImageDetailsQueryName = "image-details-by-digest"
 
-	baseImagesByDigestQueryName = "base-images-by-digest"
+	imageDetailsByDigestQueryName = "base-image-details-by-digest"
 
-	baseImagesByDigestQuery = `
-	query ($context: Context!, $digest: String!) {
-		baseImagesByDigest(context: $context, digest: $digest) {
-		  images {
+	imageDetailsByDigestQuery = `
+	query ($context: Context!, $digest: String!, $platform: ImagePlatform!) {
+		imageDetailsByDigest(context: $context, digest: $digest, platform: $platform) {
 			digest
 			tags {
 			  current
@@ -27,7 +26,6 @@ const (
 				hostName
 				repoName
 			}
-		  }
 		}
 	}`
 )
@@ -59,18 +57,12 @@ type (
 		Digest       string     `json:"digest" edn:"digest"`
 		BaseImage    *BaseImage `json:"baseImage" edn:"baseImage"`
 		BaseImageTag *Tag       `json:"baseImageTag" edn:"baseImageTag"`
+		Tags         []Tag      `json:"tags" edn:"tags"`
+		Repository   Repository `json:"repository" edn:"repository"`
 	}
 
 	ImageDetailsByDigestResponse struct {
 		ImageDetailsByDigest *ImageDetailsByDigest `json:"imageDetailsByDigest" edn:"imageDetailsByDigest"`
-	}
-
-	BaseImagesByDigest struct {
-		Images []BaseImage `json:"images" edn:"images"`
-	}
-
-	BaseImagesByDigestResponse struct {
-		BaseImagesByDigest *BaseImagesByDigest `json:"baseImagesByDigest" edn:"baseImagesByDigest"`
 	}
 )
 
@@ -84,34 +76,37 @@ func MockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *typ
 }
 
 func mockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *types.SBOM, ds data.DataSource) (ImageDetailsByDigestResponse, error) {
-	ds, err := data.NewSyncGraphqlDataSource(ctx, req)
-	if err != nil {
-		return ImageDetailsByDigestResponse{}, err
-	}
-
 	baseImageDigest := sb.Source.Provenance.BaseImage.Digest
 
-	var queryResponse BaseImagesByDigestResponse
+	var queryResponse ImageDetailsByDigestResponse
 
 	queryVariables := map[string]interface{}{
 		"digest":  baseImageDigest,
-		"context": data.GqlContext(req)}
-	_, err = ds.Query(ctx, baseImagesByDigestQueryName, baseImagesByDigestQuery, queryVariables, &queryResponse)
+		"context": data.GqlContext(req),
+		"platform": GqlImagePlatform{
+			Architecture: sb.Source.Provenance.BaseImage.Platform.Architecture,
+			Os:           sb.Source.Provenance.BaseImage.Platform.OS,
+			Variant:      sb.Source.Provenance.BaseImage.Platform.Variant}}
+	_, err := ds.Query(ctx, imageDetailsByDigestQueryName, imageDetailsByDigestQuery, queryVariables, &queryResponse)
 	if err != nil {
 		return ImageDetailsByDigestResponse{}, err
 	}
 
-	if len(queryResponse.BaseImagesByDigest.Images) == 0 {
+	if queryResponse.ImageDetailsByDigest == nil {
 		return ImageDetailsByDigestResponse{}, fmt.Errorf("no base images found for digest %s", baseImageDigest)
 	}
 
-	baseImage := queryResponse.BaseImagesByDigest.Images[0]
-	baseImageTag := findBaseImageTag(baseImage, sb.Source.Provenance.BaseImage.Tag)
+	baseImage := queryResponse.ImageDetailsByDigest
+	baseImageTag := findBaseImageTag(*baseImage, sb.Source.Provenance.BaseImage.Tag)
 
 	mockResponse := ImageDetailsByDigestResponse{
 		ImageDetailsByDigest: &ImageDetailsByDigest{
-			Digest:       sb.Source.Image.Digest,
-			BaseImage:    &baseImage,
+			Digest: sb.Source.Image.Digest,
+			BaseImage: &BaseImage{
+				Digest:     baseImage.Digest,
+				Repository: baseImage.Repository,
+				Tags:       baseImage.Tags,
+			},
 			BaseImageTag: baseImageTag,
 		},
 	}
@@ -119,7 +114,7 @@ func mockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *typ
 	return mockResponse, nil
 }
 
-func findBaseImageTag(baseImage BaseImage, tag string) *Tag {
+func findBaseImageTag(baseImage ImageDetailsByDigest, tag string) *Tag {
 	for _, t := range baseImage.Tags {
 		if t.Name == tag {
 			return &t
