@@ -19,6 +19,7 @@ package skill
 import (
 	"context"
 
+	"github.com/atomist-skills/go-skill/util"
 	"olympos.io/encoding/edn"
 )
 
@@ -40,14 +41,22 @@ type Skill struct {
 }
 
 type EventContextSubscription struct {
-	Name          string             `edn:"name"`
-	Configuration Configuration      `edn:"configuration"`
-	Result        [][]edn.RawMessage `edn:"result"`
+	Name          string         `edn:"name"`
+	Configuration Configuration  `edn:"configuration"`
+	Result        edn.RawMessage `edn:"result"`
 	Metadata      struct {
 		AfterBasisT  int64  `edn:"after-basis-t"`
 		Tx           int64  `edn:"tx"`
 		ScheduleName string `edn:"schedule-name"`
 	} `edn:"metadata"`
+}
+
+func (e *EventContextSubscription) GetResultInMapForm() []map[edn.Keyword]edn.RawMessage {
+	return util.Decode[[]map[edn.Keyword]edn.RawMessage](e.Result)
+}
+
+func (e *EventContextSubscription) GetResultInListForm() [][]edn.RawMessage {
+	return util.Decode[[][]edn.RawMessage](e.Result)
 }
 
 type EventContextWebhook struct {
