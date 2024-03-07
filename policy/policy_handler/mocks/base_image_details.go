@@ -93,7 +93,9 @@ func mockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *typ
 
 	var queryResponse BaseImagesByDigestResponse
 
-	queryVariables := map[string]interface{}{"digest": baseImageDigest}
+	queryVariables := map[string]interface{}{
+		"digest":  baseImageDigest,
+		"context": data.GqlContext(req)}
 	_, err = ds.Query(ctx, baseImagesByDigestQueryName, baseImagesByDigestQuery, queryVariables, &queryResponse)
 	if err != nil {
 		return ImageDetailsByDigestResponse{}, err
