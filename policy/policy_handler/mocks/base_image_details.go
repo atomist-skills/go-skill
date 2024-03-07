@@ -2,7 +2,6 @@ package mocks
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
@@ -93,7 +92,18 @@ func mockBaseImageDetails(ctx context.Context, req skill.RequestContext, sb *typ
 	}
 
 	if queryResponse.ImageDetailsByDigest == nil {
-		return ImageDetailsByDigestResponse{}, fmt.Errorf("no base images found for digest %s", baseImageDigest)
+		// if base image is not found in skill context org, then try with no org in case it is public
+
+		queryVariables["context"] = map[string]interface{}{}
+		_, err := ds.Query(ctx, imageDetailsByDigestQueryName, imageDetailsByDigestQuery, queryVariables, &queryResponse)
+		if err != nil {
+			return ImageDetailsByDigestResponse{}, err
+		}
+
+		if queryResponse.ImageDetailsByDigest == nil {
+			req.Log.Info("Base image could not be found")
+			return ImageDetailsByDigestResponse{}, nil
+		}
 	}
 
 	baseImage := queryResponse.ImageDetailsByDigest
