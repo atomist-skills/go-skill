@@ -32,20 +32,20 @@ type SyncRequestMetadata struct {
 func WithLocal() Opt {
 	return func(h *EventHandler) {
 		h.subscriptionNames = append(h.subscriptionNames, eventNameLocalEval)
-		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getLocalSubscriptionData)
+		h.evalInputProviders = append(h.evalInputProviders, getLocalSubscriptionData)
 		h.dataSourceProviders = append([]dataSourceProvider{buildLocalDataSources}, h.dataSourceProviders...)
 		h.transactFilters = append(h.transactFilters, shouldTransactLocal)
 	}
 }
 
-func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
+func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error) {
 	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
-		return nil, skill.Configuration{}, nil
+		return nil, skill.Configuration{}, nil, nil
 	}
 
 	_, sbom, err := parseMetadata(req)
 	if err != nil {
-		return nil, skill.Configuration{}, err
+		return nil, skill.Configuration{}, nil, err
 	}
 
 	var mockCommonSubscriptionData goals.ImageSubscriptionQueryResult
@@ -65,12 +65,16 @@ func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goa
 
 	subscriptionData, err := edn.Marshal(mockCommonSubscriptionData)
 	if err != nil {
-		return nil, skill.Configuration{}, err
+		return nil, skill.Configuration{}, nil, err
 	}
 
+	subscriptionResult := map[edn.Keyword]edn.RawMessage{}
+	subscriptionResult[edn.Keyword("image")] = subscriptionData
+
 	return &goals.EvaluationMetadata{
-		SubscriptionResult: [][]edn.RawMessage{{subscriptionData}},
-	}, req.Event.Context.SyncRequest.Configuration, nil
+		SubscriptionResult: []map[edn.Keyword]edn.RawMessage{
+			subscriptionResult,
+		}}, req.Event.Context.SyncRequest.Configuration, sbom, nil
 }
 
 func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goals.EvaluationMetadata) ([]data.DataSource, error) {

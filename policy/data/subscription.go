@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+
 	"olympos.io/encoding/edn"
 )
 
@@ -10,10 +11,10 @@ import (
 // possibly allowing earlier data sources to pick up the query first.
 type SubscriptionDataSource struct {
 	queryIndexes        map[string]int
-	subscriptionResults [][]edn.RawMessage
+	subscriptionResults []map[edn.Keyword]edn.RawMessage
 }
 
-func NewSubscriptionDataSource(queryIndexes map[string]int, subscriptionResults [][]edn.RawMessage) SubscriptionDataSource {
+func NewSubscriptionDataSource(queryIndexes map[string]int, subscriptionResults []map[edn.Keyword]edn.RawMessage) SubscriptionDataSource {
 	return SubscriptionDataSource{
 		queryIndexes:        queryIndexes,
 		subscriptionResults: subscriptionResults,
@@ -21,16 +22,12 @@ func NewSubscriptionDataSource(queryIndexes map[string]int, subscriptionResults 
 }
 
 func (ds SubscriptionDataSource) Query(_ context.Context, queryName string, _ string, _ map[string]interface{}, output interface{}) (*QueryResponse, error) {
-	ix, ok := ds.queryIndexes[queryName]
+	result, ok := ds.subscriptionResults[0][edn.Keyword(queryName)]
 	if !ok {
 		return nil, nil
 	}
 
-	if len(ds.subscriptionResults) == 0 || ix >= len(ds.subscriptionResults[0]) {
-		return nil, nil
-	}
-
-	err := edn.Unmarshal(ds.subscriptionResults[0][ix], output)
+	err := edn.Unmarshal(result, output)
 	if err != nil {
 		return nil, err
 	}
