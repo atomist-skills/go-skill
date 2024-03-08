@@ -22,6 +22,10 @@ func NewSubscriptionDataSource(queryIndexes map[string]int, subscriptionResults 
 }
 
 func (ds SubscriptionDataSource) Query(_ context.Context, queryName string, _ string, _ map[string]interface{}, output interface{}) (*QueryResponse, error) {
+	if len(ds.subscriptionResults) == 0 {
+		return nil, nil
+	}
+
 	result, ok := ds.subscriptionResults[0][edn.Keyword(queryName)]
 	if !ok {
 		return nil, nil
