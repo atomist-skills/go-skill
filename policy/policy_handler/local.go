@@ -10,11 +10,9 @@ import (
 	"io"
 
 	"github.com/atomist-skills/go-skill"
-	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
-	"github.com/atomist-skills/go-skill/policy/policy_handler/legacy"
-	"github.com/atomist-skills/go-skill/policy/policy_handler/mocks"
 	"github.com/atomist-skills/go-skill/policy/types"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"olympos.io/encoding/edn"
 )
 
@@ -22,35 +20,43 @@ const eventNameLocalEval = "evaluate_goals_locally"
 
 type SyncRequestMetadata struct {
 	QueryResults map[edn.Keyword]edn.RawMessage `edn:"fixedQueryResults"`
-	Packages     []legacy.Package               `edn:"packages"`      // todo remove when no longer used
+	Packages     []Package                      `edn:"packages"`      // todo remove when no longer used
 	User         string                         `edn:"imgConfigUser"` // The user from the image config blob // todo remove when no longer used
 	SBOM         string                         `edn:"sbom"`
 	ContentType  string                         `edn:"contentType"`
 	Encoding     string                         `edn:"encoding"`
 }
 
+type Package struct {
+	Licenses  []string `edn:"licenses,omitempty"` // only needed for the license policy evaluation
+	Name      string   `edn:"name"`
+	Namespace string   `edn:"namespace"`
+	Version   string   `edn:"version"`
+	Purl      string   `edn:"purl"`
+	Type      string   `edn:"type"`
+}
+
 func WithLocal() Opt {
 	return func(h *EventHandler) {
 		h.subscriptionNames = append(h.subscriptionNames, eventNameLocalEval)
-		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getLocalSubscriptionData)
-		h.dataSourceProviders = append([]dataSourceProvider{buildLocalDataSources}, h.dataSourceProviders...)
+		h.evalInputProviders = append(h.evalInputProviders, getLocalSubscriptionData)
 		h.transactFilters = append(h.transactFilters, shouldTransactLocal)
 	}
 }
 
-func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
+func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error) {
 	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
-		return nil, skill.Configuration{}, nil
+		return nil, skill.Configuration{}, nil, nil
 	}
 
-	_, sbom, err := parseMetadata(req)
+	syncRequestMetadata, sbom, err := parseMetadata(req)
 	if err != nil {
-		return nil, skill.Configuration{}, err
+		return nil, skill.Configuration{}, nil, err
 	}
 
-	var mockCommonSubscriptionData goals.CommonSubscriptionQueryResult
+	var commonSubscriptionData goals.ImageSubscriptionQueryResult
 	if sbom != nil {
-		mockCommonSubscriptionData = goals.CommonSubscriptionQueryResult{
+		commonSubscriptionData = goals.ImageSubscriptionQueryResult{
 			ImageDigest: sbom.Source.Image.Digest,
 			ImagePlatforms: []goals.ImagePlatform{{
 				Architecture: sbom.Source.Image.Platform.Architecture,
@@ -58,58 +64,49 @@ func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goa
 			}},
 		}
 	} else {
-		mockCommonSubscriptionData = goals.CommonSubscriptionQueryResult{
+		commonSubscriptionData = goals.ImageSubscriptionQueryResult{
 			ImageDigest: "localDigest",
 		}
+
+		artifacts := []types.Package{}
+		for _, pkg := range syncRequestMetadata.Packages {
+			artifacts = append(artifacts, types.Package{
+				Name:      pkg.Name,
+				Version:   pkg.Version,
+				Type:      pkg.Type,
+				Purl:      pkg.Purl,
+				Licenses:  pkg.Licenses,
+				Namespace: pkg.Namespace,
+			})
+		}
+
+		sbom = &types.SBOM{
+			Source: types.Source{
+				Image: &types.ImageSource{
+					Digest: "localDigest",
+					Config: &v1.ConfigFile{
+						Config: v1.Config{
+							User: syncRequestMetadata.User,
+						},
+					},
+				},
+			},
+			Artifacts: artifacts,
+		}
 	}
 
-	subscriptionData, err := edn.Marshal(mockCommonSubscriptionData)
+	subscriptionData, err := edn.Marshal(commonSubscriptionData)
 	if err != nil {
-		return nil, skill.Configuration{}, err
+		return nil, skill.Configuration{}, nil, err
 	}
+
+	subscriptionResult := map[edn.Keyword]edn.RawMessage{}
+	subscriptionResult[edn.Keyword("image")] = subscriptionData
 
 	return &goals.EvaluationMetadata{
-		SubscriptionResult: [][]edn.RawMessage{{subscriptionData}},
-	}, req.Event.Context.SyncRequest.Configuration, nil
-}
-
-func buildLocalDataSources(ctx context.Context, req skill.RequestContext, _ goals.EvaluationMetadata) ([]data.DataSource, error) {
-	if req.Event.Context.SyncRequest.Name != eventNameLocalEval {
-		return []data.DataSource{}, nil
-	}
-
-	srMeta, sbom, err := parseMetadata(req)
-	if err != nil {
-		return nil, err
-	}
-
-	srMeta.QueryResults, err = mocks.BuildLocalEvalMocks(ctx, req, sbom)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build local evaluation mocks: %w", err)
-	}
-
-	fixedQueryResults := map[string][]byte{}
-	for k, v := range srMeta.QueryResults {
-		fixedQueryResults[string(k)] = v
-	}
-
-	if _, ok := fixedQueryResults[legacy.ImagePackagesByDigestQueryName]; !ok && len(srMeta.Packages) != 0 {
-		mockedQueryResult, err := legacy.MockImagePackagesByDigest(ctx, req, srMeta.Packages, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		pkgsEdn, err := edn.Marshal(mockedQueryResult)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal mocked query %s: %w", legacy.ImagePackagesByDigestQueryName, err)
-		}
-
-		fixedQueryResults[legacy.ImagePackagesByDigestQueryName] = pkgsEdn
-	}
-
-	return []data.DataSource{
-		data.NewFixedDataSource(edn.Unmarshal, fixedQueryResults),
-	}, nil
+		SubscriptionResult: []map[edn.Keyword]edn.RawMessage{
+			subscriptionResult,
+		}}, req.Event.Context.SyncRequest.Configuration, sbom, nil
 }
 
 func shouldTransactLocal(_ context.Context, req skill.RequestContext) bool {

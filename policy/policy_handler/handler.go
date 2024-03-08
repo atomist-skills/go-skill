@@ -2,6 +2,7 @@ package policy_handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os/user"
@@ -15,14 +16,16 @@ import (
 	"github.com/atomist-skills/go-skill/policy/types"
 	"github.com/atomist-skills/go-skill/util"
 	"olympos.io/encoding/edn"
+
+	intoto "github.com/in-toto/in-toto-golang/in_toto"
 )
 
 type (
 	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal goals.Goal, dataSource data.DataSource) (goals.GoalEvaluator, error)
 
-	subscriptionProvider func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error)
-	dataSourceProvider   func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error)
-	transactionFilter    func(ctx context.Context, req skill.RequestContext) bool
+	evalInputProvider  func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error)
+	dataSourceProvider func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error)
+	transactionFilter  func(ctx context.Context, req skill.RequestContext) bool
 
 	EventHandler struct {
 		// parameters
@@ -30,9 +33,9 @@ type (
 		subscriptionNames []string
 
 		// hooks used by opts
-		subscriptionDataProviders []subscriptionProvider
-		dataSourceProviders       []dataSourceProvider
-		transactFilters           []transactionFilter
+		evalInputProviders  []evalInputProvider
+		dataSourceProviders []dataSourceProvider
+		transactFilters     []transactionFilter
 	}
 
 	Opt func(handler *EventHandler)
@@ -101,10 +104,11 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 	var (
 		evaluationMetadata *goals.EvaluationMetadata
 		configuration      skill.Configuration
+		sbom               *types.SBOM
 		err                error
 	)
-	for _, provider := range h.subscriptionDataProviders {
-		evaluationMetadata, configuration, err = provider(ctx, req)
+	for _, provider := range h.evalInputProviders {
+		evaluationMetadata, configuration, sbom, err = provider(ctx, req)
 		if err != nil {
 			return skill.NewFailedStatus(fmt.Sprintf("failed to retrieve subscription result [%s]", err.Error()))
 		}
@@ -114,7 +118,7 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 	}
 
 	if evaluationMetadata == nil {
-		return skill.NewFailedStatus(fmt.Sprintf("subscription result was not found"))
+		return skill.NewFailedStatus("subscription result was not found")
 	}
 
 	sources := []data.DataSource{}
@@ -131,10 +135,10 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 
 	dataSource := data.NewChainDataSource(sources...)
 
-	return h.evaluate(ctx, req, dataSource, *evaluationMetadata, configuration)
+	return h.evaluate(ctx, req, dataSource, *evaluationMetadata, *sbom, configuration)
 }
 
-func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, evaluationMetadata goals.EvaluationMetadata, configuration skill.Configuration) skill.Status {
+func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, dataSource data.DataSource, evaluationMetadata goals.EvaluationMetadata, sbom types.SBOM, configuration skill.Configuration) skill.Status {
 	goalName := req.Event.Skill.Name
 	tx := evaluationMetadata.SubscriptionTx
 	subscriptionResult := evaluationMetadata.SubscriptionResult
@@ -167,13 +171,16 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create goal evaluator: %s", err.Error()))
 	}
 
-	commonResults := util.Decode[goals.CommonSubscriptionQueryResult](subscriptionResult[0][0])
-	digest := commonResults.ImageDigest
+	if err != nil {
+		req.Log.Errorf(err.Error())
+		return skill.NewFailedStatus(fmt.Sprintf("Failed to create sbom from subscription: %s", err.Error()))
+	}
+	digest := sbom.Source.Image.Digest
 
 	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
 	evaluationTs := time.Now().UTC()
 
-	evaluationResult, err := evaluator.EvaluateGoal(ctx, req, commonResults, subscriptionResult)
+	evaluationResult, err := evaluator.EvaluateGoal(ctx, req, sbom)
 	if err != nil {
 		req.Log.Errorf("Failed to evaluate goal %s for digest %s: %s", goal.Definition, digest, err.Error())
 		return skill.NewFailedStatus("Failed to evaluate goal")
@@ -211,6 +218,11 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 	)
 }
 
+type intotoStatement struct {
+	intoto.StatementHeader
+	Predicate json.RawMessage `json:"predicate"`
+}
+
 func transact(
 	ctx context.Context,
 	req skill.RequestContext,
@@ -218,12 +230,12 @@ func transact(
 	goalName string,
 	digest string,
 	goal goals.Goal,
-	subscriptionResult [][]edn.RawMessage,
+	subscriptionResult []map[edn.Keyword]edn.RawMessage,
 	evaluationTs time.Time,
 	goalResults []goals.GoalEvaluationQueryResult,
 	tx int64,
 ) skill.Status {
-	storageTuple := util.Decode[[]string](subscriptionResult[0][1])
+	storageTuple := util.Decode[[]string](subscriptionResult[0]["previous"])
 	previousStorageId := storageTuple[0]
 	previousConfigHash := storageTuple[1]
 

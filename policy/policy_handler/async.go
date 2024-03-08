@@ -21,7 +21,7 @@ const eventNameAsyncQuery = data.AsyncQueryName // these must match for the even
 func WithAsyncMultiQuery() Opt {
 	return func(h *EventHandler) {
 		h.subscriptionNames = append(h.subscriptionNames, eventNameAsyncQuery)
-		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getAsyncSubscriptionData)
+		h.evalInputProviders = append(h.evalInputProviders, getAsyncInputData)
 		h.dataSourceProviders = append(h.dataSourceProviders, buildAsyncDataSources(true))
 	}
 }
@@ -37,28 +37,33 @@ func WithAsync() Opt {
 		}
 
 		h.subscriptionNames = append(h.subscriptionNames, eventNameAsyncQuery)
-		h.subscriptionDataProviders = append(h.subscriptionDataProviders, getAsyncSubscriptionData)
+		h.evalInputProviders = append(h.evalInputProviders, getAsyncInputData)
 		h.dataSourceProviders = append(h.dataSourceProviders, buildAsyncDataSources(false))
 	}
 }
 
-func getAsyncSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, error) {
+func getAsyncInputData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error) {
 	if req.Event.Context.AsyncQueryResult.Name != eventNameAsyncQuery {
-		return nil, skill.Configuration{}, nil
+		return nil, skill.Configuration{}, nil, nil
 	}
 
 	metaEdn, err := b64.StdEncoding.DecodeString(req.Event.Context.AsyncQueryResult.Metadata)
 	if err != nil {
-		return nil, skill.Configuration{}, fmt.Errorf("failed to decode async metadata: %w", err)
+		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to decode async metadata: %w", err)
 	}
 
 	var metadata data.AsyncResultMetadata
 	err = edn.Unmarshal(metaEdn, &metadata)
 	if err != nil {
-		return nil, skill.Configuration{}, fmt.Errorf("failed to unmarshal async metadata: %w", err)
+		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to unmarshal async metadata: %w", err)
 	}
 
-	return &metadata.EvaluationMetadata, req.Event.Context.AsyncQueryResult.Configuration, nil
+	sbom, err := createSbomFromSubscriptionResult(metadata.EvaluationMetadata.SubscriptionResult, req)
+	if err != nil {
+		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to create SBOM from subscription result: %w", err)
+	}
+
+	return &metadata.EvaluationMetadata, req.Event.Context.AsyncQueryResult.Configuration, &sbom, nil
 }
 
 func buildAsyncDataSources(multipleQuerySupport bool) dataSourceProvider {
