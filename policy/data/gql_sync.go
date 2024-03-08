@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -47,7 +46,7 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 
 	log.Infof("GraphQL query response: %s", string(res))
 
-	err = json.Unmarshal(res, output)
+	err = graphql.UnmarshalGraphQL(res, output)
 	if err != nil {
 		return nil, err
 	}
