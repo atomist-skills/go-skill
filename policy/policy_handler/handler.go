@@ -118,7 +118,7 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 	}
 
 	if evaluationMetadata == nil {
-		return skill.NewFailedStatus(fmt.Sprintf("subscription result was not found"))
+		return skill.NewFailedStatus("subscription result was not found")
 	}
 
 	sources := []data.DataSource{}
@@ -180,7 +180,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
 	evaluationTs := time.Now().UTC()
 
-	evaluationResult, err := evaluator.EvaluateGoal(ctx, req, sbom, subscriptionResult)
+	evaluationResult, err := evaluator.EvaluateGoal(ctx, req, sbom)
 	if err != nil {
 		req.Log.Errorf("Failed to evaluate goal %s for digest %s: %s", goal.Definition, digest, err.Error())
 		return skill.NewFailedStatus("Failed to evaluate goal")

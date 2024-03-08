@@ -107,7 +107,7 @@ type (
 	}
 
 	GoalEvaluator interface {
-		EvaluateGoal(ctx context.Context, req skill.RequestContext, sbom types.SBOM, subscriptionResults []map[edn.Keyword]edn.RawMessage) (EvaluationResult, error)
+		EvaluateGoal(ctx context.Context, req skill.RequestContext, sbom types.SBOM) (EvaluationResult, error)
 	}
 
 	EvaluationResult struct {
