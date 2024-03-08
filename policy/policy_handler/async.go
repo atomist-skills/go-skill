@@ -58,7 +58,7 @@ func getAsyncInputData(ctx context.Context, req skill.RequestContext) (*goals.Ev
 		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to unmarshal async metadata: %w", err)
 	}
 
-	sbom, err := createSbomFromSubscriptionResult(metadata.EvaluationMetadata.SubscriptionResult)
+	sbom, err := createSbomFromSubscriptionResult(metadata.EvaluationMetadata.SubscriptionResult, req)
 	if err != nil {
 		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to create SBOM from subscription result: %w", err)
 	}

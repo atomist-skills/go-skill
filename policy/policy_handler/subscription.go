@@ -34,7 +34,7 @@ func getSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.Ev
 		SubscriptionTx:     req.Event.Context.Subscription.Metadata.Tx,
 	}
 
-	sbom, err := createSbomFromSubscriptionResult(evalMeta.SubscriptionResult)
+	sbom, err := createSbomFromSubscriptionResult(evalMeta.SubscriptionResult, req)
 	if err != nil {
 		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to create SBOM from subscription result: %w", err)
 	}
@@ -56,7 +56,7 @@ func buildSubscriptionDataSource(queryIndexes map[string]int) dataSourceProvider
 	}
 }
 
-func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.RawMessage) (types.SBOM, error) {
+func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.RawMessage, req skill.RequestContext) (types.SBOM, error) {
 	imageEdn, ok := subscriptionResult[0][edn.Keyword("image")]
 
 	if !ok {
@@ -72,6 +72,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 	if image.Attestations != nil {
 		for _, attestation := range image.Attestations {
 			if attestation.PredicateType == nil {
+				req.Log.Debug("skipping attestation without predicate type")
 				continue
 			}
 
@@ -80,6 +81,8 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 					PredicateType: *attestation.PredicateType,
 				},
 			}
+
+			req.Log.Debugf("found attestation with predicate type %s", *attestation.PredicateType)
 
 			payloadBytes, _ := json.Marshal(intotoStatement)
 
@@ -92,6 +95,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 
 			for _, predicate := range attestation.Predicates {
 				if predicate.StartLine != nil {
+					req.Log.Debug("found max mode provenance")
 					sourceMap = &types.SourceMap{
 						Instructions: []types.InstructionSourceMap{
 							{
@@ -123,6 +127,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 	}
 
 	if image.ImagePlatforms != nil && len(image.ImagePlatforms) > 0 {
+		req.Log.Debugf("found image platform: %s/%s", image.ImagePlatforms[0].Architecture, image.ImagePlatforms[0].Os)
 		sbom.Source.Image.Platform = types.Platform{
 			Architecture: image.ImagePlatforms[0].Architecture,
 			Os:           image.ImagePlatforms[0].Os,
@@ -130,6 +135,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 	}
 
 	if image.FromRepo != nil && image.FromReference != nil {
+		req.Log.Debugf("found provenance data for base image: %s/%s:%s", image.FromRepo.Host, image.FromRepo.Repository, image.FromTag)
 		sbom.Source.Provenance = &types.Provenance{
 			BaseImage: &types.ProvenanceBaseImage{
 				Digest: image.FromReference.Digest,
