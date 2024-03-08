@@ -48,9 +48,9 @@ func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goa
 		return nil, skill.Configuration{}, err
 	}
 
-	var mockCommonSubscriptionData goals.CommonSubscriptionQueryResult
+	var mockCommonSubscriptionData goals.ImageSubscriptionQueryResult
 	if sbom != nil {
-		mockCommonSubscriptionData = goals.CommonSubscriptionQueryResult{
+		mockCommonSubscriptionData = goals.ImageSubscriptionQueryResult{
 			ImageDigest: sbom.Source.Image.Digest,
 			ImagePlatforms: []goals.ImagePlatform{{
 				Architecture: sbom.Source.Image.Platform.Architecture,
@@ -58,7 +58,7 @@ func getLocalSubscriptionData(_ context.Context, req skill.RequestContext) (*goa
 			}},
 		}
 	} else {
-		mockCommonSubscriptionData = goals.CommonSubscriptionQueryResult{
+		mockCommonSubscriptionData = goals.ImageSubscriptionQueryResult{
 			ImageDigest: "localDigest",
 		}
 	}

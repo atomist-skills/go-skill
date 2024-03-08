@@ -21,7 +21,7 @@ func getSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.Ev
 	}
 
 	evalMeta := &goals.EvaluationMetadata{
-		SubscriptionResult: req.Event.Context.Subscription.GetResultInListForm(),
+		SubscriptionResult: req.Event.Context.Subscription.GetResultInMapForm(),
 		SubscriptionTx:     req.Event.Context.Subscription.Metadata.Tx,
 	}
 	return evalMeta, req.Event.Context.Subscription.Configuration, nil

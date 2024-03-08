@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/atomist-skills/go-skill"
+	"github.com/atomist-skills/go-skill/policy/types"
 	"olympos.io/encoding/edn"
 )
 
@@ -61,23 +62,52 @@ type (
 		Where edn.RawMessage         `edn:"where"`
 	}
 
+	OsDistro struct {
+		Name    string `edn:"os.distro/name"`
+		Version string `edn:"os.distro/version"`
+	}
+
+	SubscriptionImage struct {
+		Digest string    `edn:"docker.image/digest"`
+		Distro *OsDistro `edn:"docker.image/distro"`
+	}
+
+	SubscriptionRepository struct {
+		Host       string `edn:"docker.repository/host"`
+		Repository string `edn:"docker.repository/repository"`
+	}
+
 	ImagePlatform struct {
 		Architecture string `edn:"docker.platform/architecture" json:"architecture"`
 		Os           string `edn:"docker.platform/os" json:"os"`
 	}
 
-	CommonSubscriptionQueryResult struct {
-		ImageDigest    string          `edn:"docker.image/digest"`
-		ImagePlatforms []ImagePlatform `edn:"docker.image/platform" json:"platforms"`
+	Attestation struct {
+		PredicateType *string     `edn:"intoto.attestation/predicate-type"`
+		Predicates    []Predicate `edn:"intoto.predicate/_attestation"`
+	}
+
+	Predicate struct {
+		StartLine *int `edn:"slsa.provenance.from/start-line"` // if field is present then provenance is max-mode
+	}
+
+	ImageSubscriptionQueryResult struct {
+		ImageDigest    string                  `edn:"docker.image/digest"`
+		ImagePlatforms []ImagePlatform         `edn:"docker.image/platform" json:"platforms"`
+		FromReference  *SubscriptionImage      `edn:"docker.image/from"`
+		FromRepo       *SubscriptionRepository `edn:"docker.image/from-repository"`
+		FromTag        *string                 `edn:"docker.image/from-tag"`
+		Attestations   []Attestation           `edn:"intoto.attestation/_subject"`
+		User           string                  `edn:"docker.image/user,omitempty"`
 	}
 
 	EvaluationMetadata struct {
-		SubscriptionResult [][]edn.RawMessage `edn:"subscription-result"`
-		SubscriptionTx     int64              `edn:"subscription-tx"`
+		SubscriptionResult []map[edn.Keyword]edn.RawMessage `edn:"subscription-result"`
+		SubscriptionTx     int64                            `edn:"subscription-tx"`
 	}
 
 	GoalEvaluator interface {
-		EvaluateGoal(ctx context.Context, req skill.RequestContext, commonData CommonSubscriptionQueryResult, subscriptionResults [][]edn.RawMessage) (EvaluationResult, error)
+		EvaluateGoal(ctx context.Context, req skill.RequestContext, sbom types.SBOM, subscriptionResults []map[edn.Keyword]edn.RawMessage) (EvaluationResult, error)
 	}
 
 	EvaluationResult struct {
