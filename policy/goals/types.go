@@ -96,7 +96,7 @@ type (
 		ImagePlatforms []ImagePlatform         `edn:"docker.image/platform" json:"platforms"`
 		FromReference  *SubscriptionImage      `edn:"docker.image/from"`
 		FromRepo       *SubscriptionRepository `edn:"docker.image/from-repository"`
-		FromTag        *string                 `edn:"docker.image/from-tag"`
+		FromTag        string                  `edn:"docker.image/from-tag"`
 		Attestations   []Attestation           `edn:"intoto.attestation/_subject"`
 		User           string                  `edn:"docker.image/user,omitempty"`
 	}

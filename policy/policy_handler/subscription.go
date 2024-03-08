@@ -65,13 +65,16 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 
 	image := util.Decode[goals.ImageSubscriptionQueryResult](imageEdn)
 
-	// TODO: probably query for all the intoto data and reconstruct the sbom attestions
 	attestations := []dsse.Envelope{}
 
 	var sourceMap *types.SourceMap
 
 	if image.Attestations != nil {
-		for _, attestation := range *&image.Attestations {
+		for _, attestation := range image.Attestations {
+			if attestation.PredicateType == nil {
+				continue
+			}
+
 			intotoStatement := intotoStatement{
 				StatementHeader: intoto.StatementHeader{
 					PredicateType: *attestation.PredicateType,
@@ -104,32 +107,37 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 		}
 	}
 
-	//TODO: handle missing data
 	sbom := types.SBOM{
 		Source: types.Source{
 			Image: &types.ImageSource{
 				Digest: image.ImageDigest,
-				Platform: types.Platform{
-					Architecture: image.ImagePlatforms[0].Architecture,
-					Os:           image.ImagePlatforms[0].Os,
-				},
+
 				Config: &v1.ConfigFile{
 					Config: v1.Config{
 						User: image.User,
 					},
 				},
 			},
-			Provenance: &types.Provenance{
-				BaseImage: &types.ProvenanceBaseImage{
-					Digest: image.FromReference.Digest,
-					Tag:    *image.FromTag,
-					Name:   fmt.Sprintf("%s/%s", image.FromRepo.Host, image.FromRepo.Repository),
-					// distro? - query separately from subscription data
-				},
-				SourceMap: sourceMap,
-			},
 		},
 		Attestations: attestations,
+	}
+
+	if image.ImagePlatforms != nil && len(image.ImagePlatforms) > 0 {
+		sbom.Source.Image.Platform = types.Platform{
+			Architecture: image.ImagePlatforms[0].Architecture,
+			Os:           image.ImagePlatforms[0].Os,
+		}
+	}
+
+	if image.FromRepo != nil && image.FromReference != nil {
+		sbom.Source.Provenance = &types.Provenance{
+			BaseImage: &types.ProvenanceBaseImage{
+				Digest: image.FromReference.Digest,
+				Tag:    image.FromTag,
+				Name:   fmt.Sprintf("%s/%s", image.FromRepo.Host, image.FromRepo.Repository),
+			},
+			SourceMap: sourceMap,
+		}
 	}
 
 	return sbom, nil
