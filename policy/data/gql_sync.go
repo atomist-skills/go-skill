@@ -12,34 +12,38 @@ import (
 )
 
 type SyncGraphqlDataSource struct {
-	Url            string
-	GraphqlClient  *graphql.Client
-	RequestContext skill.RequestContext
+	url           string
+	graphqlClient *graphql.Client
+	logger        skill.Logger
 }
 
-func NewSyncGraphqlDataSource(ctx context.Context, req skill.RequestContext) (SyncGraphqlDataSource, error) {
+func NewSyncGraphqlDataSourceFromSkillRequest(ctx context.Context, req skill.RequestContext) (SyncGraphqlDataSource, error) {
+	return NewSyncGraphqlDataSource(ctx, req.Event.Token, req.Event.Urls.Graphql, req.Log)
+}
+
+func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, logger skill.Logger) (SyncGraphqlDataSource, error) {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: req.Event.Token, TokenType: "Bearer"},
+		&oauth2.Token{AccessToken: token, TokenType: "Bearer"},
 	))
 
 	return SyncGraphqlDataSource{
-		Url: req.Event.Urls.Graphql,
-		GraphqlClient: graphql.NewClient(req.Event.Urls.Graphql, httpClient).
+		url: url,
+		graphqlClient: graphql.NewClient(url, httpClient).
 			WithRequestModifier(func(r *http.Request) {
 				r.Header.Add("Accept", "application/json")
 			}),
-		RequestContext: req,
+		logger: logger,
 	}, nil
 }
 
 func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
-	log := ds.RequestContext.Log
+	log := ds.logger
 
-	log.Infof("Graphql endpoint: %s", ds.RequestContext.Event.Urls.Graphql)
+	log.Infof("Graphql endpoint: %s", ds.url)
 	log.Infof("Executing query %s: %s", queryName, query)
 	log.Infof("Query variables: %v", variables)
 
-	res, err := ds.GraphqlClient.ExecRaw(ctx, query, variables)
+	res, err := ds.graphqlClient.ExecRaw(ctx, query, variables)
 	if err != nil {
 		return nil, err
 	}

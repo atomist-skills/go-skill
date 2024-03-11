@@ -107,11 +107,17 @@ type (
 	}
 
 	GoalEvaluator interface {
-		EvaluateGoal(ctx context.Context, req skill.RequestContext, sbom types.SBOM) (EvaluationResult, error)
+		EvaluateGoal(ctx context.Context, evalCtx GoalEvaluationContext, sbom types.SBOM, extraData []map[edn.Keyword]edn.RawMessage) (EvaluationResult, error)
 	}
 
 	EvaluationResult struct {
 		EvaluationCompleted bool
 		Result              []GoalEvaluationQueryResult
+	}
+
+	GoalEvaluationContext struct {
+		Log          skill.Logger
+		TeamId       string
+		Organization string
 	}
 )
