@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/types"
 	"github.com/atomist-skills/go-skill/util"
@@ -40,20 +39,6 @@ func getSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.Ev
 	}
 
 	return evalMeta, req.Event.Context.Subscription.Configuration, &sbom, nil
-}
-
-func WithSubscriptionDataSource(queryIndexes map[string]int) Opt {
-	return func(h *EventHandler) {
-		h.dataSourceProviders = append(h.dataSourceProviders, buildSubscriptionDataSource(queryIndexes))
-	}
-}
-
-func buildSubscriptionDataSource(queryIndexes map[string]int) dataSourceProvider {
-	return func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
-		return []data.DataSource{
-			data.NewSubscriptionDataSource(queryIndexes, evalMeta.SubscriptionResult),
-		}, nil
-	}
 }
 
 func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.RawMessage, req skill.RequestContext) (types.SBOM, error) {

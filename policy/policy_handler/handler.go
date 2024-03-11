@@ -171,16 +171,14 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create goal evaluator: %s", err.Error()))
 	}
 
-	if err != nil {
-		req.Log.Errorf(err.Error())
-		return skill.NewFailedStatus(fmt.Sprintf("Failed to create sbom from subscription: %s", err.Error()))
-	}
 	digest := sbom.Source.Image.Digest
 
 	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
 	evaluationTs := time.Now().UTC()
 
-	evaluationResult, err := evaluator.EvaluateGoal(ctx, req, sbom)
+	evalContext := goals.GoalEvaluationContext{}
+
+	evaluationResult, err := evaluator.EvaluateGoal(ctx, evalContext, sbom, subscriptionResult)
 	if err != nil {
 		req.Log.Errorf("Failed to evaluate goal %s for digest %s: %s", goal.Definition, digest, err.Error())
 		return skill.NewFailedStatus("Failed to evaluate goal")
