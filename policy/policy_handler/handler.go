@@ -21,7 +21,7 @@ import (
 )
 
 type (
-	EvaluatorSelector func(ctx context.Context, req skill.RequestContext, goal goals.Goal, dataSource data.DataSource) (goals.GoalEvaluator, error)
+	EvaluatorSelector func(ctx context.Context, goal goals.Goal, dataSource data.DataSource) (goals.GoalEvaluator, error)
 
 	evalInputProvider  func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error)
 	dataSourceProvider func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error)
@@ -165,7 +165,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		Args:          paramValues,
 	}
 
-	evaluator, err := h.evalSelector(ctx, req, goal, dataSource)
+	evaluator, err := h.evalSelector(ctx, goal, dataSource)
 	if err != nil {
 		req.Log.Errorf(err.Error())
 		return skill.NewFailedStatus(fmt.Sprintf("Failed to create goal evaluator: %s", err.Error()))
@@ -176,7 +176,11 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 	req.Log.Infof("Evaluating goal %s for digest %s ", goalName, digest)
 	evaluationTs := time.Now().UTC()
 
-	evalContext := goals.GoalEvaluationContext{}
+	evalContext := goals.GoalEvaluationContext{
+		Log:          req.Log,
+		TeamId:       req.Event.WorkspaceId,
+		Organization: req.Event.Organization,
+	}
 
 	evaluationResult, err := evaluator.EvaluateGoal(ctx, evalContext, sbom, subscriptionResult)
 	if err != nil {
