@@ -51,6 +51,12 @@ type Vulnerability struct {
 	Cvss            Cvss      `graphql:"cvss" json:"cvss,omitempty"`
 	Cwes            []Cwe     `graphql:"cwes" json:"cwes,omitempty"`
 	VexStatements   []vex.VEX `graphql:"-" json:"vex_statements,omitempty"`
+	Epss            *Epss     `graphql:"epss" json:"epss,omitempty"`
+}
+
+type Epss struct {
+	Score      float32 `graphql:"score" json:"score,omitempty"`
+	Percentile float32 `graphql:"percentile" json:"percentile,omitempty"`
 }
 
 type Cvss struct {
