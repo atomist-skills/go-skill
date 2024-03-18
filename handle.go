@@ -47,11 +47,17 @@ func Start(handlers Handlers) {
 func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		buf := new(strings.Builder)
-		io.Copy(buf, r.Body)
+		rc := r.Body
+		defer rc.Close()
+		_, err := io.Copy(buf, rc)
+		if err != nil {
+			w.WriteHeader(201)
+			return
+		}
 		body := buf.String()
 
 		var event EventIncoming
-		err := edn.NewDecoder(strings.NewReader(body)).Decode(&event)
+		err = edn.NewDecoder(strings.NewReader(body)).Decode(&event)
 		if err != nil {
 			w.WriteHeader(201)
 			return
