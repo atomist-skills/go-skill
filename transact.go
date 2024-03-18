@@ -223,10 +223,11 @@ func createMessageSender(ctx context.Context, req RequestContext) messageSender 
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
+
 		if resp.StatusCode != 202 {
 			Log.Warnf("Error transacting entities: %s", resp.Status)
 		}
-		defer resp.Body.Close()
 
 		return nil
 	}

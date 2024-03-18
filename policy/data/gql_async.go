@@ -130,6 +130,8 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 	if err != nil {
 		return nil, err
 	}
+	defer r.Body.Close()
+
 	if r.StatusCode >= 400 {
 		buf := new(strings.Builder)
 		_, _ = io.Copy(buf, r.Body)
