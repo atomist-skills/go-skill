@@ -100,11 +100,12 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 			Log.Warnf("Failed to execute log http request: %s", err)
 			return false
 		}
+		defer resp.Body.Close()
+
 		if resp.StatusCode != 202 {
 			Log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
 			return false
 		}
-		defer resp.Body.Close()
 		return true
 	}
 
