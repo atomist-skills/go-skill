@@ -81,13 +81,13 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 			attestations = append(attestations, env)
 
 			for _, predicate := range attestation.Predicates {
-				if predicate.ProvenanceMode == nil {
+				if predicate.ProvenanceMode != nil {
 					var mode string
-					if predicate.ProvenanceMode.Ident == edn.Keyword("buildkit.provenance.mode/MAX") {
-						mode = types.BuildKitMaxMode
-					}
 
-					if predicate.ProvenanceMode.Ident == edn.Keyword("buildkit.provenance.mode/MIN") {
+					switch predicate.ProvenanceMode.Ident {
+					case edn.Keyword("buildkit.provenance.mode/MAX"):
+						mode = types.BuildKitMaxMode
+					case edn.Keyword("buildkit.provenance.mode/MIN"):
 						mode = types.BuildKitMinMode
 					}
 
