@@ -6,6 +6,11 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
+const (
+	BuildKitMaxMode = "buildkit_max_mode"
+	BuildKitMinMode = "buildkit_min_mode"
+)
+
 type SBOM struct {
 	Source          Source                  `json:"source"`
 	Attestations    []dsse.Envelope         `json:"attestations"`
@@ -110,6 +115,7 @@ type Provenance struct {
 	VCS       *VCS                 `json:"vcs,omitempty"`
 	BaseImage *ProvenanceBaseImage `json:"base_image,omitempty"`
 	Stream    *Stream              `json:"stream,omitempty"`
+	Mode      string               `json:"mode,omitempty"`
 }
 
 type SourceMap struct {

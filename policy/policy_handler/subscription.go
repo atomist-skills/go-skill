@@ -52,7 +52,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 
 	attestations := []dsse.Envelope{}
 
-	var sourceMap *types.SourceMap
+	var provenanceMode *string
 
 	if image.Attestations != nil {
 		for _, attestation := range image.Attestations {
@@ -78,21 +78,22 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 				Payload:     payload,
 			}
 
+			attestations = append(attestations, env)
+
 			for _, predicate := range attestation.Predicates {
-				if predicate.StartLine != nil {
-					req.Log.Debug("found max mode provenance")
-					sourceMap = &types.SourceMap{
-						Instructions: []types.InstructionSourceMap{
-							{
-								Instruction: "FROM_RUNTIME",
-								StartLine:   *predicate.StartLine,
-							},
-						},
+				if predicate.ProvenanceMode == nil {
+					var mode string
+					if predicate.ProvenanceMode.Ident == edn.Keyword("buildkit.provenance.mode/MAX") {
+						mode = types.BuildKitMaxMode
 					}
+
+					if predicate.ProvenanceMode.Ident == edn.Keyword("buildkit.provenance.mode/MIN") {
+						mode = types.BuildKitMinMode
+					}
+
+					provenanceMode = &mode
 				}
 			}
-
-			attestations = append(attestations, env)
 		}
 	}
 
@@ -119,7 +120,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 		}
 	}
 
-	if image.FromRepo != nil && image.FromReference != nil {
+	if provenanceMode != nil {
 		req.Log.Debugf("found provenance data for base image: %s/%s:%s", image.FromRepo.Host, image.FromRepo.Repository, image.FromTag)
 		sbom.Source.Provenance = &types.Provenance{
 			BaseImage: &types.ProvenanceBaseImage{
@@ -127,7 +128,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 				Tag:    image.FromTag,
 				Name:   fmt.Sprintf("%s/%s", image.FromRepo.Host, image.FromRepo.Repository),
 			},
-			SourceMap: sourceMap,
+			Mode: *provenanceMode,
 		}
 	}
 
