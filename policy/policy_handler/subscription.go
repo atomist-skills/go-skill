@@ -123,12 +123,15 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 	if provenanceMode != nil {
 		req.Log.Debugf("found provenance data for base image: %s/%s:%s", image.FromRepo.Host, image.FromRepo.Repository, image.FromTag)
 		sbom.Source.Provenance = &types.Provenance{
-			BaseImage: &types.ProvenanceBaseImage{
+			Mode: *provenanceMode,
+		}
+
+		if image.FromRepo != nil && image.FromReference != nil {
+			sbom.Source.Provenance.BaseImage = &types.ProvenanceBaseImage{
 				Digest: image.FromReference.Digest,
 				Tag:    image.FromTag,
 				Name:   fmt.Sprintf("%s/%s", image.FromRepo.Host, image.FromRepo.Repository),
-			},
-			Mode: *provenanceMode,
+			}
 		}
 	}
 
