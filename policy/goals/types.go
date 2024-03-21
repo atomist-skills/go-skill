@@ -87,8 +87,12 @@ type (
 		Predicates    []Predicate `edn:"intoto.predicate/_attestation"`
 	}
 
+	BuildKitProvenanceMode struct {
+		Ident edn.Keyword `edn:"db/ident"`
+	}
+
 	Predicate struct {
-		StartLine *int `edn:"slsa.provenance.from/start-line"` // if field is present then provenance is max-mode
+		ProvenanceMode *BuildKitProvenanceMode `edn:"buildkit.provenance/mode,omitempty"`
 	}
 
 	ImageSubscriptionQueryResult struct {
