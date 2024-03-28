@@ -22,6 +22,10 @@ func NewSyncGraphqlDataSourceFromSkillRequest(ctx context.Context, req skill.Req
 }
 
 func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, logger skill.Logger) (SyncGraphqlDataSource, error) {
+	return NewSyncGraphqlDataSourceWithCorrelationId(ctx, token, url, logger, nil)
+}
+
+func NewSyncGraphqlDataSourceWithCorrelationId(ctx context.Context, token string, url string, logger skill.Logger, correlationId *string) (SyncGraphqlDataSource, error) {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token, TokenType: "Bearer"},
 	))
@@ -31,6 +35,10 @@ func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, log
 		graphqlClient: graphql.NewClient(url, httpClient).
 			WithRequestModifier(func(r *http.Request) {
 				r.Header.Add("Accept", "application/json")
+
+				if correlationId != nil {
+					r.Header.Add("X-Atomist-Correlation-Id", *correlationId)
+				}
 			}),
 		logger: logger,
 	}, nil
