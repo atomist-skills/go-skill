@@ -15,8 +15,15 @@ type DataSource interface {
 }
 
 func GqlContext(ctx goals.GoalEvaluationContext) map[string]interface{} {
-	return map[string]interface{}{
-		"teamId":       ctx.TeamId,
-		"organization": ctx.Organization,
+	result := map[string]interface{}{}
+
+	if ctx.TeamId != "" {
+		result["teamId"] = ctx.TeamId
 	}
+
+	if ctx.Organization != "" {
+		result["organization"] = ctx.Organization
+	}
+
+	return result
 }
