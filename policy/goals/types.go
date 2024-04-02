@@ -80,6 +80,7 @@ type (
 	ImagePlatform struct {
 		Architecture string `edn:"docker.platform/architecture" json:"architecture"`
 		Os           string `edn:"docker.platform/os" json:"os"`
+		Variant      string `edn:"docker.platform/variant" json:"variant"`
 	}
 
 	Attestation struct {

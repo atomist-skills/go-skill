@@ -117,6 +117,7 @@ func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.R
 		sbom.Source.Image.Platform = types.Platform{
 			Architecture: image.ImagePlatforms[0].Architecture,
 			Os:           image.ImagePlatforms[0].Os,
+			Variant:      image.ImagePlatforms[0].Variant,
 		}
 	}
 
