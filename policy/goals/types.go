@@ -33,7 +33,7 @@ type (
 	}
 
 	GoalEvaluationQueryResult struct {
-		Details map[edn.Keyword]interface{} `edn:"details"`
+		Details map[edn.Keyword]interface{} `edn:"details" json:"details"`
 	}
 
 	DockerImageEntity struct {
