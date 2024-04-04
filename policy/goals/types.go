@@ -126,5 +126,6 @@ type (
 		TeamId       string
 		Organization string
 		Goal         Goal
+		Request      skill.RequestContext
 	}
 )

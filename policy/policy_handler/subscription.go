@@ -162,5 +162,5 @@ func createSBOMFromSubscriptionResult(req skill.RequestContext, subscriptionResu
 		}
 	}
 
-	return sbom, nil
+	return &sbom, nil
 }
