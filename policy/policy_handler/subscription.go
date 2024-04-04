@@ -6,15 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/goals"
+	"github.com/atomist-skills/go-skill/policy/storage"
 	"github.com/atomist-skills/go-skill/policy/types"
 	"github.com/atomist-skills/go-skill/util"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"olympos.io/encoding/edn"
-
-	"github.com/atomist-skills/go-skill"
 )
 
 func withSubscription() Opt {
@@ -23,7 +23,7 @@ func withSubscription() Opt {
 	}
 }
 
-func getSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error) {
+func getSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error) {
 	if req.Event.Context.Subscription.Name == "" {
 		return nil, skill.Configuration{}, nil, nil
 	}
@@ -34,19 +34,43 @@ func getSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.Ev
 		SubscriptionBasisT: req.Event.Context.Subscription.Metadata.AfterBasisT,
 	}
 
-	sbom, err := createSbomFromSubscriptionResult(evalMeta.SubscriptionResult, req)
+	sb, err := createSBOMFromManifest(ctx, req, evalMeta.SubscriptionResult)
+	if err == nil {
+		return evalMeta, req.Event.Context.Subscription.Configuration, sb, nil
+	}
+
+	sb, err = createSBOMFromSubscriptionResult(req, evalMeta.SubscriptionResult)
 	if err != nil {
 		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to create SBOM from subscription result: %w", err)
 	}
 
-	return evalMeta, req.Event.Context.Subscription.Configuration, &sbom, nil
+	return evalMeta, req.Event.Context.Subscription.Configuration, sb, nil
 }
 
-func createSbomFromSubscriptionResult(subscriptionResult []map[edn.Keyword]edn.RawMessage, req skill.RequestContext) (types.SBOM, error) {
+func createSBOMFromManifest(ctx context.Context, req skill.RequestContext, subscriptionResult []map[edn.Keyword]edn.RawMessage) (*types.SBOM, error) {
 	imageEdn, ok := subscriptionResult[0][edn.Keyword("image")]
 
 	if !ok {
-		return types.SBOM{}, fmt.Errorf("image not found in subscription result")
+		return nil, fmt.Errorf("image not found in subscription result")
+	}
+
+	image := util.Decode[goals.ImageSubscriptionQueryResult](imageEdn)
+
+	digest := image.ImageDigest
+
+	sst := storage.NewSBOMStore(ctx)
+	if sb, ok := sst.Read(req, digest); ok {
+		return sb, nil
+	} else {
+		return nil, fmt.Errorf("sbom not found in storage")
+	}
+}
+
+func createSBOMFromSubscriptionResult(req skill.RequestContext, subscriptionResult []map[edn.Keyword]edn.RawMessage) (*types.SBOM, error) {
+	imageEdn, ok := subscriptionResult[0][edn.Keyword("image")]
+
+	if !ok {
+		return nil, fmt.Errorf("image not found in subscription result")
 	}
 
 	image := util.Decode[goals.ImageSubscriptionQueryResult](imageEdn)
