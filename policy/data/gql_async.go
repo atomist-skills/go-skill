@@ -19,15 +19,16 @@ import (
 const AsyncQueryName = "async-query"
 
 type (
-	AsyncQueryBody struct {
+	GraphQLQueryBody struct {
 		Query     string                      `edn:"query"`
 		Variables map[edn.Keyword]interface{} `edn:"variables"`
+		BasisT    *int64                      `edn:"basis-t,omitempty"`
 	}
 
 	AsyncQueryRequest struct {
-		Name     string         `edn:"name"`
-		Body     AsyncQueryBody `edn:"body"`
-		Metadata string         `edn:"metadata"`
+		Name     string           `edn:"name"`
+		Body     GraphQLQueryBody `edn:"body"`
+		Metadata string           `edn:"metadata"`
 	}
 
 	AsyncQueryResponse struct {
@@ -102,9 +103,10 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 
 	request := AsyncQueryRequest{
 		Name: AsyncQueryName,
-		Body: AsyncQueryBody{
+		Body: GraphQLQueryBody{
 			Query:     query,
 			Variables: ednVariables,
+			BasisT:    &ds.evaluationMetadata.SubscriptionBasisT,
 		},
 		Metadata: metadata64,
 	}

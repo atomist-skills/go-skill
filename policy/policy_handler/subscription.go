@@ -31,6 +31,7 @@ func getSubscriptionData(_ context.Context, req skill.RequestContext) (*goals.Ev
 	evalMeta := &goals.EvaluationMetadata{
 		SubscriptionResult: req.Event.Context.Subscription.GetResultInMapForm(),
 		SubscriptionTx:     req.Event.Context.Subscription.Metadata.Tx,
+		SubscriptionBasisT: req.Event.Context.Subscription.Metadata.AfterBasisT,
 	}
 
 	sbom, err := createSbomFromSubscriptionResult(evalMeta.SubscriptionResult, req)

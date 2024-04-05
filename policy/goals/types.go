@@ -109,6 +109,7 @@ type (
 	EvaluationMetadata struct {
 		SubscriptionResult []map[edn.Keyword]edn.RawMessage `edn:"subscription-result"`
 		SubscriptionTx     int64                            `edn:"subscription-tx"`
+		SubscriptionBasisT int64                            `edn:"subscription-basis-t"`
 	}
 
 	GoalEvaluator interface {
