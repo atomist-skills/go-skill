@@ -101,6 +101,7 @@ type EventIncoming struct {
 		Transactions string `edn:"transactions"`
 		Query        string `edn:"query"`
 		Graphql      string `edn:"graphql"`
+		Entitlements string `edn:"entitlements"`
 	} `edn:"urls"`
 	Token string `edn:"token"`
 }
