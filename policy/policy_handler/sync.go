@@ -2,7 +2,6 @@ package policy_handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/atomist-skills/go-skill/policy/goals"
 
@@ -17,10 +16,7 @@ func WithSyncQuery() Opt {
 }
 
 func getSyncDataSources(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error) {
-	gqlDs, err := data.NewSyncGraphqlDataSourceFromSkillRequest(ctx, req, evalMeta)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create data source: %w", err)
-	}
+	gqlDs := data.NewSyncGraphqlDataSourceFromSkillRequest(ctx, req, evalMeta)
 
 	return []data.DataSource{
 		gqlDs,
