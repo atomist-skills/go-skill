@@ -95,7 +95,7 @@ func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, varia
 		BasisT:    ds.basisT,
 	}
 	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(in)
+	err := edn.NewEncoder(&buf).Encode(in)
 	if err != nil {
 		return nil, fmt.Errorf("problem encoding request: %w", err)
 	}
