@@ -25,11 +25,11 @@ type SyncGraphqlDataSource struct {
 	basisT        *int64
 }
 
-func NewSyncGraphqlDataSourceFromSkillRequest(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) (SyncGraphqlDataSource, error) {
-	return NewSyncGraphqlDataSource(ctx, req.Event.Token, req.Event.Urls.Graphql, req.Log)
+func NewSyncGraphqlDataSourceFromSkillRequest(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) SyncGraphqlDataSource {
+	return NewSyncGraphqlDataSource(ctx, req.Event.Token, req.Event.Urls.Graphql, req.Log).WithBasisT(evalMeta.SubscriptionBasisT)
 }
 
-func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, logger skill.Logger) (SyncGraphqlDataSource, error) {
+func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, logger skill.Logger) SyncGraphqlDataSource {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token, TokenType: "Bearer"},
 	))
@@ -38,7 +38,7 @@ func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, log
 		url:        url,
 		httpClient: *httpClient,
 		logger:     logger,
-	}, nil
+	}
 }
 
 func (ds SyncGraphqlDataSource) WithCorrelationId(correlationId string) SyncGraphqlDataSource {
