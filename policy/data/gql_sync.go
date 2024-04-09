@@ -5,11 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"golang.org/x/oauth2"
-	"olympos.io/encoding/edn"
 
 	"github.com/hasura/go-graphql-client"
 
@@ -23,6 +22,12 @@ type SyncGraphqlDataSource struct {
 	logger        skill.Logger
 	correlationId *string
 	basisT        *int64
+}
+
+type SyncGraphQLQueryBody struct {
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables"`
+	BasisT    *int64                 `json:"basis-t,omitempty"`
 }
 
 func NewSyncGraphqlDataSourceFromSkillRequest(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) SyncGraphqlDataSource {
@@ -68,12 +73,7 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 	log.Infof("Executing query %s: %s", queryName, query)
 	log.Infof("Query variables: %v", variables)
 
-	ednVariables := map[edn.Keyword]interface{}{}
-	for k, v := range variables {
-		ednVariables[edn.Keyword(k)] = v
-	}
-
-	res, err := ds.request(ctx, query, ednVariables)
+	res, err := ds.request(ctx, query, variables)
 	if err != nil {
 		return nil, err
 	}
@@ -88,14 +88,14 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 	return &QueryResponse{}, nil
 }
 
-func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, variables map[edn.Keyword]interface{}) ([]byte, error) {
-	in := GraphQLQueryBody{
+func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+	in := SyncGraphQLQueryBody{
 		Query:     query,
 		Variables: variables,
 		BasisT:    ds.basisT,
 	}
 	var buf bytes.Buffer
-	err := edn.NewEncoder(&buf).Encode(in)
+	err := json.NewEncoder(&buf).Encode(in)
 	if err != nil {
 		return nil, fmt.Errorf("problem encoding request: %w", err)
 	}
@@ -107,7 +107,7 @@ func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, varia
 
 		return nil, e
 	}
-	request.Header.Add("Content-Type", "application/edn")
+	request.Header.Add("Content-Type", "application/json")
 
 	request.Header.Add("Accept", "application/json")
 
@@ -126,7 +126,7 @@ func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, varia
 	r := resp.Body
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		err := fmt.Errorf("%v; body: %q", resp.Status, body)
 
 		return nil, err
