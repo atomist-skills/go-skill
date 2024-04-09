@@ -19,16 +19,16 @@ import (
 const AsyncQueryName = "async-query"
 
 type (
-	GraphQLQueryBody struct {
+	AsyncGraphQLQueryBody struct {
 		Query     string                      `edn:"query"`
 		Variables map[edn.Keyword]interface{} `edn:"variables"`
 		BasisT    *int64                      `edn:"basis-t,omitempty"`
 	}
 
 	AsyncQueryRequest struct {
-		Name     string           `edn:"name"`
-		Body     GraphQLQueryBody `edn:"body"`
-		Metadata string           `edn:"metadata"`
+		Name     string                `edn:"name"`
+		Body     AsyncGraphQLQueryBody `edn:"body"`
+		Metadata string                `edn:"metadata"`
 	}
 
 	AsyncQueryResponse struct {
@@ -80,11 +80,6 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 		return nil, nil // don't error, in case there is another applicable query executor down-chain
 	}
 
-	ednVariables := map[edn.Keyword]interface{}{}
-	for k, v := range variables {
-		ednVariables[edn.Keyword(k)] = v
-	}
-
 	metadata := AsyncResultMetadata{
 		EvaluationMetadata: ds.evaluationMetadata,
 		AsyncQueryResults:  ds.asyncResults,
@@ -101,9 +96,14 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 		return nil, nil
 	}
 
+	ednVariables := map[edn.Keyword]interface{}{}
+	for k, v := range variables {
+		ednVariables[edn.Keyword(k)] = v
+	}
+
 	request := AsyncQueryRequest{
 		Name: AsyncQueryName,
-		Body: GraphQLQueryBody{
+		Body: AsyncGraphQLQueryBody{
 			Query:     query,
 			Variables: ednVariables,
 			BasisT:    &ds.evaluationMetadata.SubscriptionBasisT,
