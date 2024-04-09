@@ -127,6 +127,21 @@ func FlushGCPHook() {
 	}
 }
 
+func WithFields(ctx context.Context) logrus.Fields {
+	if fields, ok := ctx.Value("skill_logging_fields").(logrus.Fields); ok {
+		return fields
+	}
+	return logrus.Fields{}
+}
+
+func SetFields(ctx context.Context, labels map[string]interface{}) context.Context {
+	fields := logrus.Fields{}
+	for k, v := range labels {
+		fields[k] = v
+	}
+	return context.WithValue(ctx, "skill_logging_fields", fields)
+}
+
 type Logger struct {
 	Debug  func(msg string)
 	Debugf func(format string, a ...any)
