@@ -64,6 +64,69 @@ func init() {
 	}
 }
 
+type gcpHook struct {
+	client    *logging.Client
+	gcpLogger *logging.Logger
+	labels    map[string]string
+}
+
+func (h *gcpHook) Levels() []logrus.Level {
+	return []logrus.Level{logrus.DebugLevel, logrus.InfoLevel, logrus.WarnLevel, logrus.ErrorLevel}
+}
+
+func (h *gcpHook) Fire(entry *logrus.Entry) error {
+	var severity logging.Severity
+	switch entry.Level {
+	case logrus.DebugLevel:
+		severity = logging.Debug
+	case logrus.InfoLevel:
+		severity = logging.Info
+	case logrus.WarnLevel:
+		severity = logging.Warning
+	case logrus.ErrorLevel:
+		severity = logging.Error
+	}
+
+	labels := make(map[string]string)
+	labels["instance_id"] = instanceID
+	for k, v := range h.labels {
+		labels[k] = v
+	}
+	for k, v := range entry.Data {
+		labels[k] = fmt.Sprintf("%v", v)
+	}
+
+	h.gcpLogger.Log(logging.Entry{
+		Severity: severity,
+		Payload:  entry.Message,
+		Labels:   labels,
+	})
+	return nil
+}
+
+func AddGCPHook(ctx context.Context, labels map[string]string) {
+	if projectID != "" {
+		client, _ := logging.NewClient(ctx, projectID)
+		gcpLogger := client.Logger("skill_logging")
+		Log.AddHook(&gcpHook{
+			client:    client,
+			gcpLogger: gcpLogger,
+			labels:    labels,
+		})
+	}
+}
+
+func FlushGCPHook() {
+	if projectID != "" {
+		for _, h := range Log.Hooks[logrus.DebugLevel] {
+			if gcpHook, ok := h.(*gcpHook); ok {
+				_ = gcpHook.gcpLogger.Flush()
+				break
+			}
+		}
+	}
+}
+
 type Logger struct {
 	Debug  func(msg string)
 	Debugf func(format string, a ...any)
