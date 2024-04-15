@@ -1,71 +1,75 @@
 package skill
 
-import "time"
+import (
+	"time"
+
+	"gopkg.in/yaml.v3"
+)
 
 type SkillSpec struct {
-	APIVersion            string                  `json:"apiVersion"`
-	Artifacts             []Artifacts             `json:"artifacts"`
-	Author                string                  `json:"author"`
-	CapabilitiesSpec      CapabilitiesSpec        `json:"capabilitiesSpec"`
-	Categories            []Categories            `json:"categories"`
-	Commands              []Commands              `json:"commands"`
-	CreatedAt             time.Time               `json:"createdAt"`
-	DatalogSubscriptions  []DatalogSubscriptions  `json:"datalogSubscriptions"`
-	Derived               bool                    `json:"derived"`
-	Description           string                  `json:"description"`
-	DispatchStyle         string                  `json:"dispatchStyle"`
-	DisplayName           string                  `json:"displayName"`
-	HomepageURL           string                  `json:"homepageUrl"`
-	IconURL               string                  `json:"iconUrl"`
-	InCatalog             bool                    `json:"inCatalog"`
-	Ingesters             []string                `json:"ingesters"`
-	Integration           bool                    `json:"integration"`
-	License               string                  `json:"license"`
-	LongDescription       string                  `json:"longDescription"`
-	Maturities            []string                `json:"maturities"`
-	MaxConfigurations     int                     `json:"maxConfigurations"`
-	Name                  string                  `json:"name"`
-	Namespace             string                  `json:"namespace"`
-	Owner                 bool                    `json:"owner"`
-	ParameterSpecs        []ParameterSpecs        `json:"parameterSpecs"`
-	Platform              string                  `json:"platform"`
-	PublishedAt           time.Time               `json:"publishedAt"`
-	Readme                string                  `json:"readme"`
-	ResourceProviderSpecs []ResourceProviderSpecs `json:"resourceProviderSpecs"`
-	Rules                 *[]string               `json:"rules,omitempty"`
-	Schemata              []Schemata              `json:"schemata"`
-	Subscriptions         []string                `json:"subscriptions"`
-	Target                *Target                 `json:"target,omitempty"`
-	Technologies          []string                `json:"technologies"`
-	Version               string                  `json:"version"`
-	VideoURL              string                  `json:"videoUrl"`
+	APIVersion            string                  `yaml:"apiVersion" json:"apiVersion"`
+	Artifacts             []Artifacts             `yaml:"artifacts" json:"artifacts"`
+	Author                string                  `yaml:"author" json:"author"`
+	CapabilitiesSpec      CapabilitiesSpec        `yaml:"capabilititesSpec" json:"capabilitiesSpec"`
+	Categories            []Categories            `yaml:"categories" json:"categories"`
+	Commands              []Commands              `yaml:"commands" json:"commands"`
+	CreatedAt             time.Time               `yaml:"createdAt" json:"createdAt"`
+	DatalogSubscriptions  []DatalogSubscriptions  `yaml:"datalogSubscriptions" json:"datalogSubscriptions"`
+	Derived               bool                    `yaml:"derived" json:"derived"`
+	Description           string                  `yaml:"description" json:"description"`
+	DispatchStyle         string                  `yaml:"dispatchStyle" json:"dispatchStyle"`
+	DisplayName           string                  `yaml:"displayName" json:"displayName"`
+	HomepageURL           string                  `yaml:"homepageUrl" json:"homepageUrl"`
+	IconURL               string                  `yaml:"iconUrl" json:"iconUrl"`
+	InCatalog             bool                    `yaml:"inCatalog" json:"inCatalog"`
+	Ingesters             []string                `yaml:"ingesters" json:"ingesters"`
+	Integration           bool                    `yaml:"integration" json:"integration"`
+	License               string                  `yaml:"license" json:"license"`
+	LongDescription       string                  `yaml:"longDescription" json:"longDescription"`
+	Maturities            []string                `yaml:"maturities" json:"maturities"`
+	MaxConfigurations     int                     `yaml:"maxConfigurations" json:"maxConfigurations"`
+	Name                  string                  `yaml:"name" json:"name"`
+	Namespace             string                  `yaml:"namespace" json:"namespace"`
+	Owner                 bool                    `yaml:"owner" json:"owner"`
+	ParameterSpecs        []ParameterSpecs        `yaml:"parameterSpecs" json:"parameterSpecs"`
+	Platform              string                  `yaml:"platform" json:"platform"`
+	PublishedAt           time.Time               `yaml:"publishedAt" json:"publishedAt"`
+	Readme                string                  `yaml:"readme" json:"readme"`
+	ResourceProviderSpecs []ResourceProviderSpecs `yaml:"resourceProviderSpecs" json:"resourceProviderSpecs"`
+	Rules                 *[]string               `yaml:"rules,omitempty" json:"rules,omitempty"`
+	Schemata              []Schemata              `yaml:"schemata" json:"schemata"`
+	Subscriptions         []string                `yaml:"subscriptions" json:"subscriptions"`
+	Target                *Target                 `yaml:"target,omitempty" json:"target,omitempty"`
+	Technologies          []string                `yaml:"technologies" json:"technologies"`
+	Version               string                  `yaml:"version" json:"version"`
+	VideoURL              string                  `yaml:"videoUrl" json:"videoUrl"`
 }
 
 type Env struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name  string `yaml:"name" json:"name"`
+	Value string `yaml:"value" json:"value"`
 }
 type Limit struct {
-	CPU    float32 `json:"cpu,omitempty"`
-	Memory float32 `json:"memory,omitempty"`
+	CPU    float32 `yaml:"cpu,omitempty" json:"cpu,omitempty"`
+	Memory float32 `yaml:"memory,omitempty" json:"memory,omitempty"`
 }
 type Request struct {
-	CPU    float32 `json:"cpu,omitempty"`
-	Memory float32 `json:"memory,omitempty"`
+	CPU    float32 `yaml:"cpu,omitempty" json:"cpu,omitempty"`
+	Memory float32 `yaml:"memory,omitempty" json:"memory,omitempty"`
 }
 type Resources struct {
-	Limit   *Limit   `json:"limit,omitempty"`
-	Request *Request `json:"request,omitempty"`
+	Limit   *Limit   `yaml:"limit,omitempty" json:"limit,omitempty"`
+	Request *Request `yaml:"request,omitempty" json:"request,omitempty"`
 }
 type Artifacts struct {
-	Name       string    `json:"name"`
-	Args       []string  `json:"args"`
-	Command    []string  `json:"command"`
-	Env        []Env     `json:"env"`
-	Image      string    `json:"image"`
-	Resources  Resources `json:"resources"`
-	Type       string    `json:"type"`
-	WorkingDir string    `json:"workingDir"`
+	Name       string    `yaml:"name"json:"name"`
+	Args       []string  `yaml:"args"json:"args"`
+	Command    []string  `yaml:"command"json:"command"`
+	Env        []Env     `yaml:"env"json:"env"`
+	Image      string    `yaml:"image"json:"image"`
+	Resources  Resources `yaml:"resources"json:"resources"`
+	Type       string    `yaml:"type"json:"type"`
+	WorkingDir string    `yaml:"workingDir":"workingDir"`
 }
 type Declares struct {
 	Name      string `yaml:"name" json:"name"`
@@ -114,15 +118,15 @@ type CapabilitiesSpec struct {
 	Requires []Requires `yaml:"requires,omitempty" json:"requires,omitempty"`
 }
 type Categories struct {
-	Key       string `json:"key"`
-	SortOrder int    `json:"sortOrder"`
-	Text      string `json:"text"`
+	Key       string `yaml:"key" json:"key"`
+	SortOrder int    `yaml:"sortOrder" json:"sortOrder"`
+	Text      string `yaml:"text" json:"text"`
 }
 type Commands struct {
-	Description string `json:"description"`
-	DisplayName string `json:"displayName"`
-	Name        string `json:"name"`
-	Pattern     string `json:"pattern"`
+	Description string `yaml:"description" json:"description"`
+	DisplayName string `yaml:"displayName" json:"displayName"`
+	Name        string `yaml:"name" json:"name"`
+	Pattern     string `yaml:"pattern" json:"pattern"`
 }
 type DatalogSubscriptions struct {
 	Limit int    `yaml:"limit" json:"limit"`
@@ -130,40 +134,51 @@ type DatalogSubscriptions struct {
 	Query string `yaml:"query" json:"query"`
 }
 type ParameterSpecs struct {
-	Description  string        `json:"description"`
-	DisplayName  string        `json:"displayName"`
-	Name         string        `json:"name"`
-	Required     bool          `json:"required"`
-	Visibility   string        `json:"visibility"`
-	DefaultValue interface{}   `json:"defaultValue"`
-	Type         string        `json:"type"`
-	Options      []OptionSpecs `json:"options"`
+	Description  string        `yaml:"description" json:"description"`
+	DisplayName  string        `yaml:"displayName" json:"displayName"`
+	Name         string        `yaml:"name" json:"name"`
+	Required     bool          `yaml:"required" json:"required"`
+	Visibility   string        `yaml:"visibility" json:"visibility"`
+	DefaultValue interface{}   `yaml:"defaultValue" json:"defaultValue"`
+	Type         string        `yaml:"type" json:"type"`
+	Options      []OptionSpecs `yaml:"options" json:"options"`
 }
 type OptionSpecs struct {
-	Description string `json:"description"`
-	Text        string `json:"text"`
-	Value       string `json:"value"`
+	Description string `yaml:"description" json:"description"`
+	Text        string `yaml:"text" json:"text"`
+	Value       string `yaml:"value" json:"value"`
 }
 type ResourceProviderSpecs struct {
-	Description string `json:"description"`
-	DisplayName string `json:"displayName"`
-	MaxAllowed  int    `json:"maxAllowed"`
-	MinRequired int    `json:"minRequired"`
-	Name        string `json:"name"`
-	TypeName    string `json:"typeName"`
+	Description string `yaml:"description" json:"description"`
+	DisplayName string `yaml:"displayName" json:"displayName"`
+	MaxAllowed  int    `yaml:"maxAllowed" json:"maxAllowed"`
+	MinRequired int    `yaml:"minRequired" json:"minRequired"`
+	Name        string `yaml:"name" json:"name"`
+	TypeName    string `yaml:"typeName" json:"typeName"`
 }
 type Schemata struct {
 	Name   string `yaml:"name" json:"name"`
 	Schema string `yaml:"schema" json:"schema"`
 }
 type Headers struct {
-	AdditionalProp1 string `json:"additionalProp1"`
-	AdditionalProp2 string `json:"additionalProp2"`
-	AdditionalProp3 string `json:"additionalProp3"`
+	AdditionalProp1 string `yaml:"additionalProp1" json:"additionalProp1"`
+	AdditionalProp2 string `yaml:"additionalProp2" json:"additionalProp2"`
+	AdditionalProp3 string `yaml:"additionalProp3" json:"additionalProp3"`
 }
 type Target struct {
-	Headers    Headers `json:"headers"`
-	SigningKey string  `json:"signingKey"`
-	Type       string  `json:"type"`
-	URL        string  `json:"url"`
+	Headers    Headers `yaml:"headers" json:"headers"`
+	SigningKey string  `yaml:"signingKey" json:"signingKey"`
+	Type       string  `yaml:"type" json:"type"`
+	URL        string  `yaml:"url" json:"url"`
+}
+
+func ParseSpec(data []byte) (SkillSpec, error) {
+	var spec SkillSpec
+
+	err := yaml.Unmarshal(data, &spec)
+	if err != nil {
+		return SkillSpec{}, err
+	}
+
+	return spec, nil
 }
