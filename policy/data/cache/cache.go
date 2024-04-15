@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"sync"
 )
 
 type QueryCache interface {
@@ -16,6 +17,7 @@ type cacheKey struct {
 }
 
 type SimpleQueryCache struct {
+	mu    sync.Mutex
 	cache map[cacheKey][]byte
 }
 
@@ -25,13 +27,24 @@ func NewQueryCache() SimpleQueryCache {
 	}
 }
 
-func (d SimpleQueryCache) Read(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+func getKey(query string, variables map[string]interface{}) (cacheKey, error) {
 	variablesJSON, err := json.Marshal(variables)
+	if err != nil {
+		return cacheKey{}, err
+	}
+
+	return cacheKey{query: query, variables: string(variablesJSON)}, nil
+}
+
+func (d SimpleQueryCache) Read(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+	key, err := getKey(query, variables)
 	if err != nil {
 		return nil, err
 	}
 
-	key := cacheKey{query: query, variables: string(variablesJSON)}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	if result, ok := d.cache[key]; ok {
 		return result, nil
 	}
@@ -40,12 +53,14 @@ func (d SimpleQueryCache) Read(ctx context.Context, query string, variables map[
 }
 
 func (d SimpleQueryCache) Write(ctx context.Context, query string, variables map[string]interface{}, res []byte) error {
-	variablesJSON, err := json.Marshal(variables)
+	key, err := getKey(query, variables)
 	if err != nil {
 		return err
 	}
 
-	key := cacheKey{query: query, variables: string(variablesJSON)}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	d.cache[key] = res
 
 	return nil
