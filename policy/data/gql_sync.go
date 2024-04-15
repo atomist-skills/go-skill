@@ -13,6 +13,7 @@ import (
 	"github.com/hasura/go-graphql-client"
 
 	"github.com/atomist-skills/go-skill"
+	"github.com/atomist-skills/go-skill/policy/data/cache"
 	"github.com/atomist-skills/go-skill/policy/goals"
 )
 
@@ -22,6 +23,7 @@ type SyncGraphqlDataSource struct {
 	logger        skill.Logger
 	correlationId *string
 	basisT        *int64
+	cache         *cache.QueryCache
 }
 
 type SyncGraphQLQueryBody struct {
@@ -47,23 +49,21 @@ func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, log
 }
 
 func (ds SyncGraphqlDataSource) WithCorrelationId(correlationId string) SyncGraphqlDataSource {
-	return SyncGraphqlDataSource{
-		url:           ds.url,
-		httpClient:    ds.httpClient,
-		correlationId: &correlationId,
-		basisT:        ds.basisT,
-		logger:        ds.logger,
-	}
+	ds.correlationId = &correlationId
+
+	return ds
 }
 
 func (ds SyncGraphqlDataSource) WithBasisT(basisT int64) SyncGraphqlDataSource {
-	return SyncGraphqlDataSource{
-		url:           ds.url,
-		httpClient:    ds.httpClient,
-		correlationId: ds.correlationId,
-		logger:        ds.logger,
-		basisT:        &basisT,
-	}
+	ds.basisT = &basisT
+
+	return ds
+}
+
+func (ds SyncGraphqlDataSource) WithQueryCache(cache cache.QueryCache) SyncGraphqlDataSource {
+	ds.cache = &cache
+
+	return ds
 }
 
 func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
@@ -73,7 +73,7 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 	log.Infof("Executing query %s: %s", queryName, query)
 	log.Infof("Query variables: %v", variables)
 
-	res, err := ds.request(ctx, query, variables)
+	res, err := ds.requestWithCache(ctx, query, variables)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,33 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 	return &QueryResponse{}, nil
 }
 
+func (ds SyncGraphqlDataSource) requestWithCache(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+	if ds.cache != nil {
+		res, err := (*ds.cache).Read(ctx, query, variables)
+		if err != nil {
+			return nil, err
+		}
+
+		if res != nil {
+			ds.logger.Info("Cache hit for query")
+			return res, nil
+		}
+	}
+
+	res, err := ds.request(ctx, query, variables)
+	if err != nil {
+		return nil, err
+	}
+
+	if ds.cache != nil {
+		err = (*ds.cache).Write(ctx, query, variables, res)
+	}
+
+	return res, err
+}
+
 func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+
 	in := SyncGraphQLQueryBody{
 		Query:     query,
 		Variables: variables,
