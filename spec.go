@@ -134,14 +134,15 @@ type DatalogSubscriptions struct {
 	Query string `yaml:"query" json:"query"`
 }
 type ParameterSpecs struct {
-	Description  string        `yaml:"description" json:"description"`
-	DisplayName  string        `yaml:"displayName" json:"displayName"`
-	Name         string        `yaml:"name" json:"name"`
-	Required     bool          `yaml:"required" json:"required"`
-	Visibility   string        `yaml:"visibility" json:"visibility"`
-	DefaultValue interface{}   `yaml:"defaultValue" json:"defaultValue"`
-	Type         string        `yaml:"type" json:"type"`
-	Options      []OptionSpecs `yaml:"options" json:"options"`
+	Description   string        `yaml:"description" json:"description"`
+	DisplayName   string        `yaml:"displayName" json:"displayName"`
+	Name          string        `yaml:"name" json:"name"`
+	Required      bool          `yaml:"required" json:"required"`
+	Visibility    string        `yaml:"visibility" json:"visibility"`
+	DefaultValue  interface{}   `yaml:"defaultValue" json:"defaultValue"`
+	DefaultValues []interface{} `yaml:"defaultValues" json:"defaultValues"`
+	Type          string        `yaml:"type" json:"type"`
+	Options       []OptionSpecs `yaml:"options" json:"options"`
 }
 type OptionSpecs struct {
 	Description string `yaml:"description" json:"description"`
