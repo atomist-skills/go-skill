@@ -1,0 +1,155 @@
+skill:
+  apiVersion: v2
+  name: bad-cves-goal
+  namespace: docker
+  displayName: High profile vulnerabilities
+  description: Report on presence of high-profile CVEs
+  author: Docker
+  license: Apache-2.0
+  categories: ["POLICY"]
+  artifacts:
+    docker:
+      - name: skill
+        image: atomist/policy-vulnerabilities
+        resources:
+          limit:
+            memory: 1024
+  datalogSubscriptionPaths: ["vulnerabilities/*.edn"]
+  parameters:
+    - singleChoice:
+        name: definitionName
+        description: Policy definition name for result correlation
+        defaultValue: bad-cves-goal
+        options:
+          - description: bad-cves-goal
+            text: bad-cves-goal
+            value: bad-cves-goal
+        required: true
+        visibility: hidden
+    - singleChoice:
+        name: resultType
+        description: Type of results that the policy evaluation produces
+        defaultValue: vulnerability
+        options:
+          - description: vulnerability
+            text: vulnerability
+            value: vulnerability
+        required: true
+        visibility: hidden
+    - string:
+        name: displayName
+        displayName: Display Name
+        description: ""
+        defaultValue: High-profile vulnerabilities
+        required: true
+    - string:
+        name: description
+        displayName: Description
+        description: ""
+        defaultValue: Images shouldn't contain vulnerabilities from Docker Scout's curated list. This list is kept up-to-date with newly disclosed vulnerabilities that are widely recognized to be risky.
+        lineStyle: markdown
+        required: true
+    - multiChoice:
+        name: cves
+        displayName: CVEs to avoid
+        description: List of CVEs to avoid
+        options:
+          - text: CVE-2023-38545 (cURL SOCKS5 heap buffer overflow)
+            value: CVE-2023-38545
+          - text: CVE-2023-44487 (HTTP/2 Rapid Reset)
+            value: CVE-2023-44487
+          - text: CVE-2014-0160 (Heartbleed)
+            value: CVE-2014-0160
+          - text: CVE-2021-44228 (Log4Shell)
+            value: CVE-2021-44228
+          - text: CVE-2024-3094 (XZ backdoor)
+            value: CVE-2024-3094
+        defaultValues:
+          - "CVE-2023-38545" # cURL SOCKS5 heap buffer overflow
+          - "CVE-2023-44487" # HTTP/2 Rapid Reset
+          - "CVE-2014-0160" # Heartbleed
+          - "CVE-2021-44228" # Log4Shell
+          - "CVE-2024-3094" # XZ backdoor
+        required: true
+        minRequired: 1
+---
+skill:
+  apiVersion: v2
+  name: no-fixable-packages-goal
+  displayName: Fixable Vulnerabilities
+  description: Report on vulnerabilities that can be fixed by upgrading
+  author: Docker
+  license: Apache-2.0
+  categories: ["POLICY"]
+  artifacts:
+    docker:
+      - name: skill
+        image: atomist/policy-vulnerabilities
+        resources:
+          limit:
+            memory: 1024
+  datalogSubscriptionPaths: ["vulnerabilities/*.edn"]
+  parameters:
+    - singleChoice:
+        name: definitionName
+        description: Policy definition name for result correlation
+        defaultValue: no-fixable-packages-goal
+        options:
+          - description: no-fixable-packages-goal
+            text: no-fixable-packages-goal
+            value: no-fixable-packages-goal
+        required: true
+        visibility: hidden
+    - singleChoice:
+        name: resultType
+        description: Type of results that the policy evaluation produces
+        defaultValue: vulnerability
+        options:
+          - description: vulnerability
+            text: vulnerability
+            value: vulnerability
+        required: true
+        visibility: hidden
+    - string:
+        name: displayName
+        displayName: Display Name
+        description: ""
+        defaultValue: Fixable critical and high vulnerabilities
+        required: true
+    - string:
+        name: description
+        displayName: Description
+        description: ""
+        defaultValue: Packages shouldn't contain any known vulnerabilities of critical/high severity that are older than 30 days and are fixable.
+        lineStyle: markdown
+        required: true
+    - multiChoice:
+        name: severities
+        displayName: Severities
+        description: List of severities (default CRITICAL and HIGH)
+        options:
+          - text: Critical
+            value: CRITICAL
+          - text: High
+            value: HIGH
+          - text: Medium
+            value: MEDIUM
+          - text: Low
+            value: LOW
+        defaultValues:
+          - "CRITICAL"
+          - "HIGH"
+        required: false
+        minRequired: 1
+    - int:
+        name: age
+        displayName: Age
+        description: Age (in days) of vulnerabilities to consider
+        defaultValue: 30
+        required: false
+    - boolean:
+        name: fixableOnly
+        displayName: Fixable vulnerabilities only
+        description: ""
+        defaultValue: true
+        required: false
