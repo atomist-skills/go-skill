@@ -1,48 +1,55 @@
 package skill
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
+type SkillDoc struct {
+	Skill SkillSpec `yaml:"skill" json:"skill"`
+}
+
 type SkillSpec struct {
-	APIVersion            string                  `yaml:"apiVersion" json:"apiVersion"`
-	Artifacts             []Artifacts             `yaml:"artifacts" json:"artifacts"`
-	Author                string                  `yaml:"author" json:"author"`
-	CapabilitiesSpec      CapabilitiesSpec        `yaml:"capabilititesSpec" json:"capabilitiesSpec"`
-	Categories            []Categories            `yaml:"categories" json:"categories"`
-	Commands              []Commands              `yaml:"commands" json:"commands"`
-	CreatedAt             time.Time               `yaml:"createdAt" json:"createdAt"`
-	DatalogSubscriptions  []DatalogSubscriptions  `yaml:"datalogSubscriptions" json:"datalogSubscriptions"`
-	Derived               bool                    `yaml:"derived" json:"derived"`
-	Description           string                  `yaml:"description" json:"description"`
-	DispatchStyle         string                  `yaml:"dispatchStyle" json:"dispatchStyle"`
-	DisplayName           string                  `yaml:"displayName" json:"displayName"`
-	HomepageURL           string                  `yaml:"homepageUrl" json:"homepageUrl"`
-	IconURL               string                  `yaml:"iconUrl" json:"iconUrl"`
-	InCatalog             bool                    `yaml:"inCatalog" json:"inCatalog"`
-	Ingesters             []string                `yaml:"ingesters" json:"ingesters"`
-	Integration           bool                    `yaml:"integration" json:"integration"`
-	License               string                  `yaml:"license" json:"license"`
-	LongDescription       string                  `yaml:"longDescription" json:"longDescription"`
-	Maturities            []string                `yaml:"maturities" json:"maturities"`
-	MaxConfigurations     int                     `yaml:"maxConfigurations" json:"maxConfigurations"`
-	Name                  string                  `yaml:"name" json:"name"`
-	Namespace             string                  `yaml:"namespace" json:"namespace"`
-	Owner                 bool                    `yaml:"owner" json:"owner"`
-	ParameterSpecs        []ParameterSpecs        `yaml:"parameterSpecs" json:"parameterSpecs"`
-	Platform              string                  `yaml:"platform" json:"platform"`
-	PublishedAt           time.Time               `yaml:"publishedAt" json:"publishedAt"`
-	Readme                string                  `yaml:"readme" json:"readme"`
-	ResourceProviderSpecs []ResourceProviderSpecs `yaml:"resourceProviderSpecs" json:"resourceProviderSpecs"`
-	Rules                 *[]string               `yaml:"rules,omitempty" json:"rules,omitempty"`
-	Schemata              []Schemata              `yaml:"schemata" json:"schemata"`
-	Subscriptions         []string                `yaml:"subscriptions" json:"subscriptions"`
-	Target                *Target                 `yaml:"target,omitempty" json:"target,omitempty"`
-	Technologies          []string                `yaml:"technologies" json:"technologies"`
-	Version               string                  `yaml:"version" json:"version"`
-	VideoURL              string                  `yaml:"videoUrl" json:"videoUrl"`
+	APIVersion            string                      `yaml:"apiVersion" json:"apiVersion"`
+	Author                string                      `yaml:"author" json:"author"`
+	CapabilitiesSpec      CapabilitiesSpec            `yaml:"capabilititesSpec" json:"capabilitiesSpec"`
+	Commands              []Commands                  `yaml:"commands" json:"commands"`
+	CreatedAt             time.Time                   `yaml:"createdAt" json:"createdAt"`
+	DatalogSubscriptions  []DatalogSubscriptions      `yaml:"datalogSubscriptions" json:"datalogSubscriptions"`
+	Derived               bool                        `yaml:"derived" json:"derived"`
+	Description           string                      `yaml:"description" json:"description"`
+	DispatchStyle         string                      `yaml:"dispatchStyle" json:"dispatchStyle"`
+	DisplayName           string                      `yaml:"displayName" json:"displayName"`
+	HomepageURL           string                      `yaml:"homepageUrl" json:"homepageUrl"`
+	IconURL               string                      `yaml:"iconUrl" json:"iconUrl"`
+	InCatalog             bool                        `yaml:"inCatalog" json:"inCatalog"`
+	Ingesters             []string                    `yaml:"ingesters" json:"ingesters"`
+	Integration           bool                        `yaml:"integration" json:"integration"`
+	License               string                      `yaml:"license" json:"license"`
+	LongDescription       string                      `yaml:"longDescription" json:"longDescription"`
+	Maturities            []string                    `yaml:"maturities" json:"maturities"`
+	MaxConfigurations     int                         `yaml:"maxConfigurations" json:"maxConfigurations"`
+	Name                  string                      `yaml:"name" json:"name"`
+	Namespace             string                      `yaml:"namespace" json:"namespace"`
+	Owner                 bool                        `yaml:"owner" json:"owner"`
+	ParameterSpecs        []ParameterSpecs            `json:"parameterSpecs"`
+	YamlParameters        []map[string]ParameterSpecs `yaml:"parameters"`
+	Platform              string                      `yaml:"platform" json:"platform"`
+	PublishedAt           time.Time                   `yaml:"publishedAt" json:"publishedAt"`
+	Readme                string                      `yaml:"readme" json:"readme"`
+	ResourceProviderSpecs []ResourceProviderSpecs     `yaml:"resourceProviderSpecs" json:"resourceProviderSpecs"`
+	Rules                 *[]string                   `yaml:"rules,omitempty" json:"rules,omitempty"`
+	Schemata              []Schemata                  `yaml:"schemata" json:"schemata"`
+	Subscriptions         []string                    `yaml:"subscriptions" json:"subscriptions"`
+	Target                *Target                     `yaml:"target,omitempty" json:"target,omitempty"`
+	Technologies          []string                    `yaml:"technologies" json:"technologies"`
+	Version               string                      `yaml:"version" json:"version"`
+	VideoURL              string                      `yaml:"videoUrl" json:"videoUrl"`
 }
 
 type Env struct {
@@ -60,16 +67,6 @@ type Request struct {
 type Resources struct {
 	Limit   *Limit   `yaml:"limit,omitempty" json:"limit,omitempty"`
 	Request *Request `yaml:"request,omitempty" json:"request,omitempty"`
-}
-type Artifacts struct {
-	Name       string    `yaml:"name"json:"name"`
-	Args       []string  `yaml:"args"json:"args"`
-	Command    []string  `yaml:"command"json:"command"`
-	Env        []Env     `yaml:"env"json:"env"`
-	Image      string    `yaml:"image"json:"image"`
-	Resources  Resources `yaml:"resources"json:"resources"`
-	Type       string    `yaml:"type"json:"type"`
-	WorkingDir string    `yaml:"workingDir":"workingDir"`
 }
 type Declares struct {
 	Name      string `yaml:"name" json:"name"`
@@ -116,11 +113,6 @@ type CapabilitiesSpec struct {
 	Declares []Declares `yaml:"declares,omitempty" json:"declares,omitempty"`
 	Provides []Provides `yaml:"provides,omitempty" json:"provides,omitempty"`
 	Requires []Requires `yaml:"requires,omitempty" json:"requires,omitempty"`
-}
-type Categories struct {
-	Key       string `yaml:"key" json:"key"`
-	SortOrder int    `yaml:"sortOrder" json:"sortOrder"`
-	Text      string `yaml:"text" json:"text"`
 }
 type Commands struct {
 	Description string `yaml:"description" json:"description"`
@@ -173,13 +165,43 @@ type Target struct {
 	URL        string  `yaml:"url" json:"url"`
 }
 
-func ParseSpec(data []byte) (SkillSpec, error) {
-	var spec SkillSpec
+func ParseSpec(data []byte) (map[string]SkillSpec, error) {
+	result := map[string]SkillSpec{}
 
-	err := yaml.Unmarshal(data, &spec)
-	if err != nil {
-		return SkillSpec{}, err
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	for {
+		var spec SkillDoc
+		err := decoder.Decode(&spec)
+
+		// break the loop in case of EOF
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if spec.Skill.Name != "" {
+			namespace := "atomist"
+			if spec.Skill.Namespace != "" {
+				namespace = spec.Skill.Namespace
+			}
+
+			fullName := fmt.Sprintf("%s/%s", namespace, spec.Skill.Name)
+
+			parameterSpecs := []ParameterSpecs{}
+			for _, p := range spec.Skill.YamlParameters {
+				for t, v := range p {
+					v.Type = t
+					parameterSpecs = append(parameterSpecs, v)
+				}
+			}
+
+			spec.Skill.ParameterSpecs = parameterSpecs
+
+			result[fullName] = spec.Skill
+		}
 	}
 
-	return spec, nil
+	return result, nil
 }
