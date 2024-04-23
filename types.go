@@ -128,13 +128,36 @@ type RequestContext struct {
 }
 
 func (r *RequestContext) NewTransaction() Transaction {
-	return newTransaction(r.ctx, *r, nil)
+	var sender messageSender
+	if r.Event.Type != "" {
+		sender = createMessageSender(r.ctx, *r)
+	} else {
+		sender = createHttpMessageSender(r.Event.WorkspaceId, r.Event.Token)
+	}
+
+	transactor := func(entities []interface{}, ordered bool) error {
+		if ordered {
+			return sender.TransactOrdered(entities, r.Event.ExecutionId)
+		} else {
+			return sender.Transact(entities)
+		}
+	}
+
+	return newTransaction(r.ctx, transactor)
 }
 
-type Transactor func(entities string)
+func NewTransaction(ctx context.Context, teamId string, token string, orderingKey string) Transaction {
+	sender := createHttpMessageSender(teamId, token)
 
-func (r *RequestContext) NewTransactionWithTransactor(transactor Transactor) Transaction {
-	return newTransaction(r.ctx, *r, transactor)
+	transactor := func(entities []interface{}, ordered bool) error {
+		if ordered {
+			return sender.TransactOrdered(entities, orderingKey)
+		} else {
+			return sender.Transact(entities)
+		}
+	}
+
+	return newTransaction(ctx, transactor)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status
