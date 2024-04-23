@@ -63,11 +63,11 @@ type transaction struct {
 
 type Transactor func(entities []interface{}, ordered bool) error
 
-func (r *RequestContext) NewTransactionWithTransactor(transactor Transactor) Transaction {
-	return newTransaction(r.ctx, transactor)
+func NewTransactionWithTransactor(ctx context.Context, transactor Transactor) Transaction {
+	return newTransaction(ctx, transactor)
 }
 
-func (r *RequestContext) NewTransactionWithStringTransactor(stringTransactor func(string)) Transaction {
+func NewTransactionWithStringTransactor(ctx context.Context, stringTransactor func(string)) Transaction {
 	transactor := func(entities []interface{}, ordered bool) error {
 		transactions, err := makeTransaction(entities, "")
 		if err != nil {
@@ -80,7 +80,7 @@ func (r *RequestContext) NewTransactionWithStringTransactor(stringTransactor fun
 		return nil
 	}
 
-	return newTransaction(r.ctx, transactor)
+	return newTransaction(ctx, transactor)
 }
 
 // Ordered makes this ordered
