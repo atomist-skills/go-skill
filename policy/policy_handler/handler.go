@@ -12,7 +12,9 @@ import (
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
 	"github.com/atomist-skills/go-skill/policy/goals"
+	"github.com/atomist-skills/go-skill/policy/transact"
 	"github.com/atomist-skills/go-skill/policy/types"
+	"github.com/atomist-skills/go-skill/util"
 
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 )
@@ -177,6 +179,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		Log:          req.Log,
 		TeamId:       req.Event.WorkspaceId,
 		Organization: req.Event.Organization,
+		Goal:         goal,
 	}
 
 	evaluationResult, err := evaluator.EvaluateGoal(ctx, evalContext, sbom, subscriptionResult)
@@ -203,18 +206,31 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		}
 	}
 
-	return transact(
+	storageTuple := util.Decode[[]string](subscriptionResult[0]["previous"])
+
+	previousResult := transact.PreviousResult{
+		StorageId:  storageTuple[0],
+		ConfigHash: storageTuple[1],
+	}
+
+	err = transact.TransactPolicyResult(
 		ctx,
-		req,
+		evalContext,
 		configuration,
-		goalName,
 		digest,
-		goal,
-		subscriptionResult,
+		&previousResult,
 		evaluationTs,
 		goalResults,
 		tx,
+		req.NewTransaction,
 	)
+
+	if err != nil {
+		req.Log.Errorf("Failed to transact goal results: %s", err.Error())
+		return skill.NewFailedStatus(fmt.Sprintf("Failed to transact goal results: %s", err.Error()))
+	}
+
+	return skill.NewCompletedStatus(fmt.Sprintf("Goal %s evaluated", goalName))
 }
 
 type intotoStatement struct {

@@ -45,7 +45,7 @@ func NewGcsStorage(ctx context.Context) (*GcsStorage, error) {
 	}, nil
 }
 
-func (gcs *GcsStorage) Store(ctx context.Context, results []goals.GoalEvaluationQueryResult, storageId, environment string, log skill.Logger) error {
+func (gcs *GcsStorage) Store(ctx context.Context, results []goals.GoalEvaluationQueryResult, storageId string, log skill.Logger) error {
 	log.Infof("Storing %d results", len(results))
 
 	content, err := edn.Marshal(results)

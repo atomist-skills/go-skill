@@ -10,7 +10,7 @@ import (
 )
 
 type EvaluationStorage interface {
-	Store(ctx context.Context, results []goals.GoalEvaluationQueryResult, storageId, environment string, log skill.Logger) error
+	Store(ctx context.Context, results []goals.GoalEvaluationQueryResult, storageId string, log skill.Logger) error
 }
 
 // NewEvaluationStorage creates a new EvaluationStorage object based on the LOCAL_DEBUG environment variable.

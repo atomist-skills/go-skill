@@ -8,71 +8,78 @@ import (
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/storage"
-	"github.com/atomist-skills/go-skill/util"
-	"olympos.io/encoding/edn"
 )
+
+type PreviousResult struct {
+	StorageId  string
+	ConfigHash string
+}
 
 func TransactPolicyResult(
 	ctx context.Context,
 	evalCtx goals.GoalEvaluationContext,
 	configuration skill.Configuration,
-	goalName string,
 	digest string,
-	goal goals.Goal,
-	subscriptionResult []map[edn.Keyword]edn.RawMessage,
+	previousResult *PreviousResult,
 	evaluationTs time.Time,
 	goalResults []goals.GoalEvaluationQueryResult,
 	tx int64,
-) skill.Status {
-	storageTuple := util.Decode[[]string](subscriptionResult[0]["previous"])
-	previousStorageId := storageTuple[0]
-	previousConfigHash := storageTuple[1]
+	newTransaction func() skill.Transaction,
+) error {
+	var previousConfigHash, previousStorageId string
+	if previousResult == nil {
+		previousConfigHash = "n/a"
+		previousStorageId = "n/a"
+	} else {
+		previousConfigHash = previousResult.ConfigHash
+		previousStorageId = previousResult.StorageId
+	}
 
 	if goalResults == nil {
-		req.Log.Infof("goal %s returned no data for digest %s", goal.Definition, digest)
+		evalCtx.Log.Infof("returned no data for digest %s", digest)
 	}
 
 	es, err := storage.NewEvaluationStorage(ctx)
 	if err != nil {
-		return skill.NewFailedStatus(fmt.Sprintf("Failed to create evaluation storage: %s", err.Error()))
+		return fmt.Errorf("Failed to create evaluation storage: %s", err.Error())
 	}
 
-	configDiffer, configHash, err := goals.GoalConfigsDiffer(req.Log, configuration, digest, goal, previousConfigHash)
+	configDiffer, configHash, err := goals.GoalConfigsDiffer(evalCtx.Log, configuration, digest, previousConfigHash)
 	if err != nil {
-		req.Log.Errorf("Failed to check if config hash changed for digest: %s", digest, err)
-		req.Log.Warnf("Will continue with the evaluation nonetheless")
+		evalCtx.Log.Errorf("Failed to check if config hash changed for digest: %s", digest, err)
+		evalCtx.Log.Warnf("Will continue with the evaluation nonetheless")
 		configDiffer = true
 	}
 
-	differ, storageId, err := goals.GoalResultsDiffer(req.Log, goalResults, digest, goal, previousStorageId)
+	differ, storageId, err := goals.GoalResultsDiffer(evalCtx.Log, goalResults, digest, previousStorageId)
 	if err != nil {
-		req.Log.Errorf("Failed to check if goal results changed for digest: %s", digest, err)
-		req.Log.Warnf("Will continue with the evaluation nonetheless")
+		evalCtx.Log.Errorf("Failed to check if goal results changed for digest: %s", digest, err)
+		evalCtx.Log.Warnf("Will continue with the evaluation nonetheless")
 		differ = true
 	}
 
 	if differ && goalResults != nil {
-		if err := es.Store(ctx, goalResults, storageId, req.Event.Environment, req.Log); err != nil {
-			return skill.NewFailedStatus(fmt.Sprintf("Failed to store evaluation results for digest %s: %s", digest, err.Error()))
+		if err := es.Store(ctx, goalResults, storageId, evalCtx.Log); err != nil {
+			return fmt.Errorf("Failed to store evaluation results for digest %s: %s", digest, err.Error())
 		}
 	}
 
 	var entities []interface{}
 	if differ || configDiffer {
 		shouldRetract := previousStorageId != "no-data" && previousStorageId != "n/a" && storageId == "no-data"
-		entity := goals.CreateEntitiesFromResults(goalResults, goal.Definition, goal.Configuration, digest, storageId, configHash, evaluationTs, tx, shouldRetract)
+		entity := goals.CreateEntitiesFromResults(goalResults, evalCtx.Goal.Definition, evalCtx.Goal.Configuration, digest, storageId, configHash, evaluationTs, tx, shouldRetract)
 		entities = append(entities, entity)
 	}
 
 	if len(entities) > 0 {
-		err = req.NewTransaction().AddEntities(entities...).Transact()
+		err = newTransaction().AddEntities(entities...).Transact()
 		if err != nil {
-			req.Log.Errorf(err.Error())
+			evalCtx.Log.Errorf(err.Error())
 		}
-		req.Log.Info("Goal results transacted")
+		evalCtx.Log.Info("Goal results transacted")
 	} else {
-		req.Log.Info("No goal results to transact")
+		evalCtx.Log.Info("No goal results to transact")
 	}
 
-	return skill.NewCompletedStatus(fmt.Sprintf("Goal %s evaluated", goalName))
+	return nil
 }

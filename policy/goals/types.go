@@ -125,5 +125,6 @@ type (
 		Log          skill.Logger
 		TeamId       string
 		Organization string
+		Goal         Goal
 	}
 )
