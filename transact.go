@@ -63,24 +63,34 @@ type transaction struct {
 
 type Transactor func(entities []interface{}, ordered bool) error
 
-func NewTransactionWithTransactor(ctx context.Context, transactor Transactor) Transaction {
+func NewTransaction(ctx context.Context, transactor Transactor) Transaction {
 	return newTransaction(ctx, transactor)
 }
 
-func NewTransactionWithStringTransactor(ctx context.Context, stringTransactor func(string)) Transaction {
-	transactor := func(entities []interface{}, ordered bool) error {
+func NewStringTransactor(stringTransactionFunc func(string)) Transactor {
+	return func(entities []interface{}, ordered bool) error {
 		transactions, err := makeTransaction(entities, "")
 		if err != nil {
 			return err
 		}
 
 		flattenedEntities := transactions.Data
-		bs, err := edn.MarshalPPrint(flattenedEntities, nil)
-		stringTransactor(string(bs))
+		bs, _ := edn.MarshalPPrint(flattenedEntities, nil)
+		stringTransactionFunc(string(bs))
 		return nil
 	}
+}
 
-	return newTransaction(ctx, transactor)
+func NewHttpTransactor(teamId string, token string, orderingKey string) Transactor {
+	sender := createHttpMessageSender(teamId, token)
+
+	return func(entities []interface{}, ordered bool) error {
+		if ordered {
+			return sender.TransactOrdered(entities, orderingKey)
+		}
+
+		return sender.Transact(entities)
+	}
 }
 
 // Ordered makes this ordered

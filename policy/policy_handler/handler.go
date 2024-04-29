@@ -208,6 +208,14 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 
 	storageTuple := util.Decode[[]string](subscriptionResult[0]["previous"])
 
+	if len(storageTuple) != 2 {
+		req.Log.Error("could not find previous result in subscription result")
+		return skill.Status{
+			State:  skill.Failed,
+			Reason: "could not find previous result in subscription result",
+		}
+	}
+
 	previousResult := transact.PreviousResult{
 		StorageId:  storageTuple[0],
 		ConfigHash: storageTuple[1],

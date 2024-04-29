@@ -138,26 +138,12 @@ func (r *RequestContext) NewTransaction() Transaction {
 	transactor := func(entities []interface{}, ordered bool) error {
 		if ordered {
 			return sender.TransactOrdered(entities, r.Event.ExecutionId)
-		} else {
-			return sender.Transact(entities)
 		}
+
+		return sender.Transact(entities)
 	}
 
 	return newTransaction(r.ctx, transactor)
-}
-
-func NewTransaction(ctx context.Context, teamId string, token string, orderingKey string) Transaction {
-	sender := createHttpMessageSender(teamId, token)
-
-	transactor := func(entities []interface{}, ordered bool) error {
-		if ordered {
-			return sender.TransactOrdered(entities, orderingKey)
-		} else {
-			return sender.Transact(entities)
-		}
-	}
-
-	return newTransaction(ctx, transactor)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status
