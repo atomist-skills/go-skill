@@ -57,9 +57,40 @@ type Transaction interface {
 type transaction struct {
 	entities   []interface{}
 	ctx        context.Context
-	context    RequestContext
 	ordered    bool
 	transactor Transactor
+}
+
+type Transactor func(entities []interface{}, ordered bool) error
+
+func NewTransaction(ctx context.Context, transactor Transactor) Transaction {
+	return newTransaction(ctx, transactor)
+}
+
+func NewStringTransactor(stringTransactionFunc func(string)) Transactor {
+	return func(entities []interface{}, ordered bool) error {
+		transactions, err := makeTransaction(entities, "")
+		if err != nil {
+			return err
+		}
+
+		flattenedEntities := transactions.Data
+		bs, _ := edn.MarshalPPrint(flattenedEntities, nil)
+		stringTransactionFunc(string(bs))
+		return nil
+	}
+}
+
+func NewHttpTransactor(teamId string, token string, orderingKey string) Transactor {
+	sender := createHttpMessageSender(teamId, token)
+
+	return func(entities []interface{}, ordered bool) error {
+		if ordered {
+			return sender.TransactOrdered(entities, orderingKey)
+		}
+
+		return sender.Transact(entities)
+	}
 }
 
 // Ordered makes this ordered
@@ -79,29 +110,7 @@ func (t *transaction) AddEntities(entities ...interface{}) Transaction {
 // Transact triggers a transaction of the entities to the backend.
 // The recorded entities are not discarded in this transaction for further reference
 func (t *transaction) Transact() error {
-	if t.transactor != nil {
-		transactions, err := makeTransaction(t.entities, "")
-		if err != nil {
-			return err
-		}
-
-		flattenedEntities := transactions.Data
-		bs, err := edn.MarshalPPrint(flattenedEntities, nil)
-		t.transactor(string(bs))
-		return nil
-	} else {
-		var transactor messageSender
-		if t.context.Event.Type != "" {
-			transactor = createMessageSender(t.ctx, t.context)
-		} else {
-			transactor = createHttpMessageSender(t.context.Event.WorkspaceId, t.context.Event.Token)
-		}
-		if t.ordered {
-			return transactor.TransactOrdered(t.entities, t.context.Event.ExecutionId)
-		} else {
-			return transactor.Transact(t.entities)
-		}
-	}
+	return t.transactor(t.entities, t.ordered)
 }
 
 // MakeEntity creates a new Entity struct populated with entity-type and a unique entity identifier
@@ -143,11 +152,10 @@ func (t *transaction) EntityRef(entityType string) string {
 }
 
 // newTransaction creates a new Transaction to record entities
-func newTransaction(ctx context.Context, context RequestContext, transactor Transactor) Transaction {
+func newTransaction(ctx context.Context, transactor Transactor) Transaction {
 	return &transaction{
 		entities:   make([]interface{}, 0),
 		ctx:        ctx,
-		context:    context,
 		ordered:    false,
 		transactor: transactor,
 	}

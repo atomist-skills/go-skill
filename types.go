@@ -128,13 +128,22 @@ type RequestContext struct {
 }
 
 func (r *RequestContext) NewTransaction() Transaction {
-	return newTransaction(r.ctx, *r, nil)
-}
+	var sender messageSender
+	if r.Event.Type != "" {
+		sender = createMessageSender(r.ctx, *r)
+	} else {
+		sender = createHttpMessageSender(r.Event.WorkspaceId, r.Event.Token)
+	}
 
-type Transactor func(entities string)
+	transactor := func(entities []interface{}, ordered bool) error {
+		if ordered {
+			return sender.TransactOrdered(entities, r.Event.ExecutionId)
+		}
 
-func (r *RequestContext) NewTransactionWithTransactor(transactor Transactor) Transaction {
-	return newTransaction(r.ctx, *r, transactor)
+		return sender.Transact(entities)
+	}
+
+	return newTransaction(r.ctx, transactor)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status

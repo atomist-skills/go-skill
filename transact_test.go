@@ -51,7 +51,7 @@ func TestMakeWithId(t *testing.T) {
 }
 
 func TestEntityRefs(t *testing.T) {
-	transaction := newTransaction(context.TODO(), RequestContext{}, func(entities string) {})
+	transaction := NewTransaction(context.TODO(), NewStringTransactor(func(entities string) {}))
 	entity1 := Bar{Name: "1"}
 	entity2 := Bar{Name: "2"}
 	entity3 := Bar{Name: "3"}

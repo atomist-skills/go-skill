@@ -9,15 +9,15 @@ import (
 
 // GoalResultsDiffer checks if the current query results differ from the previous ones.
 // It returns the storage id for the current query results.
-func GoalResultsDiffer(log skill.Logger, queryResults []GoalEvaluationQueryResult, digest string, goal Goal, previousStorageId string) (bool, string, error) {
-	log.Infof("Generating storage id for goal %s, image %s", goal.Definition, digest)
+func GoalResultsDiffer(log skill.Logger, queryResults []GoalEvaluationQueryResult, digest string, previousStorageId string) (bool, string, error) {
+	log.Infof("Generating storage id for image %s", digest)
 
 	storageId := "no-data"
 
 	if queryResults != nil {
 		hash, err := hashstructure.Hash(queryResults, hashstructure.FormatV2, nil)
 		if err != nil {
-			return false, "", fmt.Errorf("failed to generate storage id for goal %s, image %s: %s", goal.Definition, digest, err)
+			return false, "", fmt.Errorf("failed to generate storage id for image %s: %s", digest, err)
 		}
 
 		storageId = fmt.Sprint(hash)
@@ -46,8 +46,8 @@ func isRelevantParam(str string) bool {
 }
 
 // Returns the config hash for the current skill config
-func GoalConfigsDiffer(log skill.Logger, config skill.Configuration, digest string, goal Goal, previousConfigHash string) (bool, string, error) {
-	log.Debugf("Generating config hash for goal %s, image %s", goal.Definition, digest)
+func GoalConfigsDiffer(log skill.Logger, config skill.Configuration, digest string, previousConfigHash string) (bool, string, error) {
+	log.Debugf("Generating config hash for image %s", digest)
 
 	params := config.Parameters
 	values := map[string]interface{}{}
@@ -59,7 +59,7 @@ func GoalConfigsDiffer(log skill.Logger, config skill.Configuration, digest stri
 
 	hash, err := hashstructure.Hash(values, hashstructure.FormatV2, nil)
 	if err != nil {
-		return false, "", fmt.Errorf("failed to generate config hash for goal %s, image %s: %s", goal.Definition, digest, err)
+		return false, "", fmt.Errorf("failed to generate config hash for image %s: %s", digest, err)
 	}
 
 	configHash := fmt.Sprint(hash)

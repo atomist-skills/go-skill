@@ -20,7 +20,7 @@ func NewFsStorage(ctx context.Context) (EvaluationStorage, error) {
 	}, nil
 }
 
-func (f *FsStorage) Store(ctx context.Context, results []goals.GoalEvaluationQueryResult, storageId, environment string, log skill.Logger) error {
+func (f *FsStorage) Store(ctx context.Context, results []goals.GoalEvaluationQueryResult, storageId string, log skill.Logger) error {
 	log.Infof("Storing %d results", len(results))
 
 	content, err := edn.Marshal(results)
