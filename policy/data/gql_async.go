@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/atomist-skills/go-skill/policy/goals"
 
@@ -133,6 +134,17 @@ func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query str
 		return nil, err
 	}
 	defer r.Body.Close()
+
+	if r.StatusCode >= 500 {
+		ds.log.Infof("Retrying async request in 30s (failed with status %s)", r.Status)
+		time.Sleep(30 * time.Second)
+
+		r, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer r.Body.Close()
+	}
 
 	if r.StatusCode >= 400 {
 		buf := new(strings.Builder)
