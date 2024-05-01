@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/atomist-skills/go-skill/environment"
 	"github.com/atomist-skills/go-skill/policy/goals"
-	"github.com/atomist-skills/go-skill/util"
 
 	"cloud.google.com/go/storage"
 	"github.com/atomist-skills/go-skill"
@@ -20,7 +20,7 @@ func getBucketName() string {
 		return bucket
 	}
 
-	if util.IsStaging() {
+	if environment.IsStaging() {
 		return "atm-policy-evaluation-results-staging"
 	}
 

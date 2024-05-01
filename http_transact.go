@@ -22,23 +22,24 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/atomist-skills/go-skill/environment"
 	"github.com/atomist-skills/go-skill/internal"
 	"github.com/google/uuid"
 	"olympos.io/encoding/edn"
 )
 
-func createHttpMessageSender(workspace string, apikey string) messageSender {
+func createHttpMessageSender(workspace string, apikey string, correlationId string) messageSender {
 	return messageSender{
 		Transact: func(entities interface{}) error {
-			return httpTransact(entities, "", workspace, apikey)
+			return httpTransact(entities, "", workspace, apikey, correlationId)
 		},
 		TransactOrdered: func(entities interface{}, orderingKey string) error {
-			return httpTransact(entities, orderingKey, workspace, apikey)
+			return httpTransact(entities, orderingKey, workspace, apikey, correlationId)
 		},
 	}
 }
 
-func httpTransact(entities interface{}, orderingKey string, workspace string, apikey string) error {
+func httpTransact(entities interface{}, orderingKey string, workspace string, apikey string, correlationId string) error {
 	var entityArray []interface{}
 	rt := reflect.TypeOf(entities)
 	switch rt.Kind() {
@@ -70,7 +71,9 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 		Entities: string(bs),
 	}
 
-	if orderingKey != "" {
+	if correlationId != "" {
+		message.CorrelationId = correlationId
+	} else if orderingKey != "" {
 		message.CorrelationId = orderingKey
 	} else {
 		message.CorrelationId = uuid.NewString()
@@ -81,7 +84,12 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 	Log.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
 
-	httpReq, err := http.NewRequest(http.MethodPost, "https://api.atomist.com/skills/remote/"+workspace, bytes.NewBuffer(j))
+	url := "https://api.atomist.com/skills/remote/" + workspace
+	if environment.IsStaging() {
+		url = "https://api-staging.atomist.services/skills/remote/" + workspace
+	}
+
+	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(j))
 	if err != nil {
 		return err
 	}
