@@ -81,8 +81,8 @@ func NewStringTransactor(stringTransactionFunc func(string)) Transactor {
 	}
 }
 
-func NewHttpTransactor(teamId string, token string, orderingKey string) Transactor {
-	sender := createHttpMessageSender(teamId, token)
+func NewHttpTransactor(teamId string, token string, orderingKey string, correlationId string) Transactor {
+	sender := createHttpMessageSender(teamId, token, correlationId)
 
 	return func(entities []interface{}, ordered bool) error {
 		if ordered {
