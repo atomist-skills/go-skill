@@ -25,7 +25,7 @@ func TransactPolicyResult(
 	goalResults []goals.GoalEvaluationQueryResult,
 	tx int64,
 	newTransaction func() skill.Transaction,
-) error {
+) (*goals.GoalEvaluationResultEntity, error) {
 	var previousConfigHash, previousStorageId string
 	if previousResult == nil {
 		previousConfigHash = "n/a"
@@ -41,7 +41,7 @@ func TransactPolicyResult(
 
 	es, err := storage.NewEvaluationStorage(ctx)
 	if err != nil {
-		return fmt.Errorf("Failed to create evaluation storage: %s", err.Error())
+		return nil, fmt.Errorf("Failed to create evaluation storage: %s", err.Error())
 	}
 
 	configDiffer, configHash, err := goals.GoalConfigsDiffer(evalCtx.Log, configuration, digest, previousConfigHash)
@@ -60,19 +60,19 @@ func TransactPolicyResult(
 
 	if differ && goalResults != nil {
 		if err := es.Store(ctx, goalResults, storageId, evalCtx.Log); err != nil {
-			return fmt.Errorf("Failed to store evaluation results for digest %s: %s", digest, err.Error())
+			return nil, fmt.Errorf("Failed to store evaluation results for digest %s: %s", digest, err.Error())
 		}
 	}
 
-	var entities []interface{}
+	var resultEntity *goals.GoalEvaluationResultEntity
 	if differ || configDiffer {
 		shouldRetract := previousStorageId != "no-data" && previousStorageId != "n/a" && storageId == "no-data"
 		entity := goals.CreateEntitiesFromResults(goalResults, evalCtx.Goal.Definition, evalCtx.Goal.Configuration, digest, storageId, configHash, evaluationTs, tx, shouldRetract)
-		entities = append(entities, entity)
+		resultEntity = &entity
 	}
 
-	if len(entities) > 0 {
-		err = newTransaction().AddEntities(entities...).Transact()
+	if resultEntity != nil {
+		err = newTransaction().AddEntities(*resultEntity).Transact()
 		if err != nil {
 			evalCtx.Log.Errorf(err.Error())
 		}
@@ -81,5 +81,5 @@ func TransactPolicyResult(
 		evalCtx.Log.Info("No goal results to transact")
 	}
 
-	return nil
+	return resultEntity, nil
 }
