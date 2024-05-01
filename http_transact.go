@@ -28,18 +28,18 @@ import (
 	"olympos.io/encoding/edn"
 )
 
-func createHttpMessageSender(workspace string, apikey string, correlationId string) messageSender {
+func createHttpMessageSender(workspace string, apikey string, correlationId string, logger Logger) messageSender {
 	return messageSender{
 		Transact: func(entities interface{}) error {
-			return httpTransact(entities, "", workspace, apikey, correlationId)
+			return httpTransact(entities, "", workspace, apikey, correlationId, logger)
 		},
 		TransactOrdered: func(entities interface{}, orderingKey string) error {
-			return httpTransact(entities, orderingKey, workspace, apikey, correlationId)
+			return httpTransact(entities, orderingKey, workspace, apikey, correlationId, logger)
 		},
 	}
 }
 
-func httpTransact(entities interface{}, orderingKey string, workspace string, apikey string, correlationId string) error {
+func httpTransact(entities interface{}, orderingKey string, workspace string, apikey string, correlationId string, logger Logger) error {
 	var entityArray []interface{}
 	rt := reflect.TypeOf(entities)
 	switch rt.Kind() {
@@ -81,7 +81,7 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 
 	client := &http.Client{}
 
-	Log.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
+	logger.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
 
 	url := "https://api.atomist.com/skills/remote/" + workspace
@@ -106,7 +106,7 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 202 {
-		Log.Warnf("Error transacting entities: %s", resp.Status)
+		logger.Warnf("Error transacting entities: %s", resp.Status)
 	}
 
 	return nil
