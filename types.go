@@ -132,7 +132,7 @@ func (r *RequestContext) NewTransaction() Transaction {
 	if r.Event.Type != "" {
 		sender = createMessageSender(r.ctx, *r)
 	} else {
-		sender = createHttpMessageSender(r.Event.WorkspaceId, r.Event.Token, r.Event.ExecutionId)
+		sender = createHttpMessageSender(r.Event.WorkspaceId, r.Event.Token, r.Event.ExecutionId, r.Log)
 	}
 
 	transactor := func(entities []interface{}, ordered bool) error {
