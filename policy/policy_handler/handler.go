@@ -221,7 +221,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		ConfigHash: storageTuple[1],
 	}
 
-	err = transact.TransactPolicyResult(
+	_, err = transact.TransactPolicyResult(
 		ctx,
 		evalContext,
 		configuration,
