@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -24,6 +25,7 @@ type SyncGraphqlDataSource struct {
 	correlationId *string
 	basisT        *int64
 	cache         *cache.QueryCache
+	retryBackoff  time.Duration
 }
 
 type SyncGraphQLQueryBody struct {
@@ -42,9 +44,10 @@ func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, log
 	))
 
 	return SyncGraphqlDataSource{
-		url:        url,
-		httpClient: *httpClient,
-		logger:     logger,
+		url:          url,
+		httpClient:   *httpClient,
+		logger:       logger,
+		retryBackoff: 10 * time.Second,
 	}
 }
 
@@ -62,6 +65,12 @@ func (ds SyncGraphqlDataSource) WithBasisT(basisT int64) SyncGraphqlDataSource {
 
 func (ds SyncGraphqlDataSource) WithQueryCache(cache cache.QueryCache) SyncGraphqlDataSource {
 	ds.cache = &cache
+
+	return ds
+}
+
+func (ds SyncGraphqlDataSource) WithRetryBackoff(backoff time.Duration) SyncGraphqlDataSource {
+	ds.retryBackoff = backoff
 
 	return ds
 }
@@ -148,6 +157,17 @@ func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, varia
 		return nil, e
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 500 && ds.retryBackoff > 0 {
+		time.Sleep(ds.retryBackoff)
+
+		resp, err = ds.httpClient.Do(request)
+		if err != nil {
+			e := fmt.Errorf("problem making request: %w", err)
+			return nil, e
+		}
+		defer resp.Body.Close()
+	}
 
 	r := resp.Body
 
