@@ -74,7 +74,6 @@ func TransactPolicyResult(
 	if resultEntity != nil {
 		err = newTransaction().AddEntities(*resultEntity).Transact()
 		if err != nil {
-			evalCtx.Log.Errorf(err.Error())
 			return nil, fmt.Errorf("Failed to transact goal results: %s", err.Error())
 		}
 		evalCtx.Log.Info("Goal results transacted")
