@@ -19,6 +19,7 @@ package skill
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -106,7 +107,7 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 202 {
-		logger.Warnf("Error transacting entities: %s", resp.Status)
+		return fmt.Errorf("error transacting entities: %s", resp.Status)
 	}
 
 	return nil
