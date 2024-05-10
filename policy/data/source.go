@@ -1,29 +1,17 @@
 package data
 
-import (
-	"context"
+import "github.com/atomist-skills/go-skill/policy/data/query"
 
-	"github.com/atomist-skills/go-skill/policy/goals"
-)
-
-type QueryResponse struct {
-	AsyncRequestMade bool
+type DataSource struct {
+	graphQLClient query.QueryClient
 }
 
-type DataSource interface {
-	Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error)
+func NewDataSource(graphQLClient query.QueryClient) DataSource {
+	return DataSource{
+		graphQLClient: graphQLClient,
+	}
 }
 
-func GqlContext(ctx goals.GoalEvaluationContext) map[string]interface{} {
-	result := map[string]interface{}{}
-
-	if ctx.TeamId != "" {
-		result["teamId"] = ctx.TeamId
-	}
-
-	if ctx.Organization != "" {
-		result["organization"] = ctx.Organization
-	}
-
-	return result
+func (ds *DataSource) GetQueryClient() query.QueryClient {
+	return ds.graphQLClient
 }

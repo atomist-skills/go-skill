@@ -11,6 +11,7 @@ import (
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
+	"github.com/atomist-skills/go-skill/policy/data/query"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/transact"
 	"github.com/atomist-skills/go-skill/policy/types"
@@ -22,9 +23,9 @@ import (
 type (
 	EvaluatorSelector func(ctx context.Context, goal goals.Goal, dataSource data.DataSource) (goals.GoalEvaluator, error)
 
-	evalInputProvider  func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error)
-	dataSourceProvider func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]data.DataSource, error)
-	transactionFilter  func(ctx context.Context, req skill.RequestContext) bool
+	evalInputProvider   func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error)
+	queryClientProvider func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]query.QueryClient, error)
+	transactionFilter   func(ctx context.Context, req skill.RequestContext) bool
 
 	EventHandler struct {
 		// parameters
@@ -32,9 +33,9 @@ type (
 		subscriptionNames []string
 
 		// hooks used by opts
-		evalInputProviders  []evalInputProvider
-		dataSourceProviders []dataSourceProvider
-		transactFilters     []transactionFilter
+		evalInputProviders   []evalInputProvider
+		queryClientProviders []queryClientProvider
+		transactFilters      []transactionFilter
 	}
 
 	Opt func(handler *EventHandler)
@@ -120,19 +121,20 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 		return skill.NewFailedStatus("subscription result was not found")
 	}
 
-	sources := []data.DataSource{}
-	for _, provider := range h.dataSourceProviders {
-		ds, err := provider(ctx, req, *evaluationMetadata)
+	sources := []query.QueryClient{}
+	for _, provider := range h.queryClientProviders {
+		qc, err := provider(ctx, req, *evaluationMetadata)
 		if err != nil {
 			if retryableError, ok := err.(types.RetryableExecutionError); ok {
 				return skill.NewRetryableStatus(fmt.Sprintf("Failed to create data source [%s]", retryableError.Error()))
 			}
 			return skill.NewFailedStatus(fmt.Sprintf("failed to create data source [%s]", err.Error()))
 		}
-		sources = append(sources, ds...)
+		sources = append(sources, qc...)
 	}
 
-	dataSource := data.NewChainDataSource(sources...)
+	queryClient := query.NewChainQueryClient(sources...)
+	dataSource := data.NewDataSource(queryClient)
 
 	return h.evaluate(ctx, req, dataSource, *evaluationMetadata, *sbom, configuration)
 }
