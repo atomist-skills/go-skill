@@ -1,4 +1,4 @@
-package data
+package query
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ type (
 		InFlightQueryName  string                        `edn:"query-name"`
 	}
 
-	AsyncDataSource struct {
+	AsyncQueryClient struct {
 		multipleQuerySupport bool
 		log                  skill.Logger
 		url                  string
@@ -55,13 +55,13 @@ type (
 	}
 )
 
-func NewAsyncDataSource(
+func NewAsyncQueryClient(
 	multipleQuerySupport bool,
 	req skill.RequestContext,
 	evaluationMetadata goals.EvaluationMetadata,
 	asyncResults map[string]AsyncQueryResponse,
-) AsyncDataSource {
-	return AsyncDataSource{
+) AsyncQueryClient {
+	return AsyncQueryClient{
 		multipleQuerySupport: multipleQuerySupport,
 		log:                  req.Log,
 		url:                  fmt.Sprintf("%s:enqueue", req.Event.Urls.Graphql),
@@ -71,7 +71,7 @@ func NewAsyncDataSource(
 	}
 }
 
-func (ds AsyncDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
+func (ds AsyncQueryClient) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
 	if existingResult, ok := ds.asyncResults[queryName]; ok {
 		return &QueryResponse{}, edn.Unmarshal(existingResult.Data, output)
 	}

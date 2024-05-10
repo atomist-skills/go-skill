@@ -1,4 +1,4 @@
-package data
+package query
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ import (
 	"github.com/atomist-skills/go-skill/policy/goals"
 )
 
-type SyncGraphqlDataSource struct {
+type SyncGraphqlQueryClient struct {
 	url           string
 	httpClient    http.Client
 	logger        skill.Logger
@@ -34,16 +34,16 @@ type SyncGraphQLQueryBody struct {
 	BasisT    *int64                 `json:"basis-t,omitempty"`
 }
 
-func NewSyncGraphqlDataSourceFromSkillRequest(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) SyncGraphqlDataSource {
-	return NewSyncGraphqlDataSource(ctx, req.Event.Token, req.Event.Urls.Graphql, req.Log).WithBasisT(evalMeta.SubscriptionBasisT)
+func NewSyncGraphqlQueryClientFromSkillRequest(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) SyncGraphqlQueryClient {
+	return NewSyncGraphqlQueryClient(ctx, req.Event.Token, req.Event.Urls.Graphql, req.Log).WithBasisT(evalMeta.SubscriptionBasisT)
 }
 
-func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, logger skill.Logger) SyncGraphqlDataSource {
+func NewSyncGraphqlQueryClient(ctx context.Context, token string, url string, logger skill.Logger) SyncGraphqlQueryClient {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token, TokenType: "Bearer"},
 	))
 
-	return SyncGraphqlDataSource{
+	return SyncGraphqlQueryClient{
 		url:          url,
 		httpClient:   *httpClient,
 		logger:       logger,
@@ -51,31 +51,31 @@ func NewSyncGraphqlDataSource(ctx context.Context, token string, url string, log
 	}
 }
 
-func (ds SyncGraphqlDataSource) WithCorrelationId(correlationId string) SyncGraphqlDataSource {
+func (ds SyncGraphqlQueryClient) WithCorrelationId(correlationId string) SyncGraphqlQueryClient {
 	ds.correlationId = &correlationId
 
 	return ds
 }
 
-func (ds SyncGraphqlDataSource) WithBasisT(basisT int64) SyncGraphqlDataSource {
+func (ds SyncGraphqlQueryClient) WithBasisT(basisT int64) SyncGraphqlQueryClient {
 	ds.basisT = &basisT
 
 	return ds
 }
 
-func (ds SyncGraphqlDataSource) WithQueryCache(cache cache.QueryCache) SyncGraphqlDataSource {
+func (ds SyncGraphqlQueryClient) WithQueryCache(cache cache.QueryCache) SyncGraphqlQueryClient {
 	ds.cache = &cache
 
 	return ds
 }
 
-func (ds SyncGraphqlDataSource) WithRetryBackoff(backoff time.Duration) SyncGraphqlDataSource {
+func (ds SyncGraphqlQueryClient) WithRetryBackoff(backoff time.Duration) SyncGraphqlQueryClient {
 	ds.retryBackoff = backoff
 
 	return ds
 }
 
-func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
+func (ds SyncGraphqlQueryClient) Query(ctx context.Context, queryName string, query string, variables map[string]interface{}, output interface{}) (*QueryResponse, error) {
 	log := ds.logger
 
 	log.Infof("Graphql endpoint: %s", ds.url)
@@ -97,7 +97,7 @@ func (ds SyncGraphqlDataSource) Query(ctx context.Context, queryName string, que
 	return &QueryResponse{}, nil
 }
 
-func (ds SyncGraphqlDataSource) requestWithCache(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+func (ds SyncGraphqlQueryClient) requestWithCache(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
 	if ds.cache != nil {
 		res, err := (*ds.cache).Read(ctx, query, variables)
 		if err != nil {
@@ -122,7 +122,7 @@ func (ds SyncGraphqlDataSource) requestWithCache(ctx context.Context, query stri
 	return res, err
 }
 
-func (ds SyncGraphqlDataSource) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
 
 	in := SyncGraphQLQueryBody{
 		Query:     query,
