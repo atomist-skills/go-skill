@@ -1,4 +1,4 @@
-package query
+package jynx
 
 const (
 	ImagePackagesByDigestQueryName = "image-packages-by-digest"
