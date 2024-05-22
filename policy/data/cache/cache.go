@@ -36,7 +36,7 @@ func getKey(query string, variables map[string]interface{}) (cacheKey, error) {
 	return cacheKey{query: query, variables: string(variablesJSON)}, nil
 }
 
-func (d SimpleQueryCache) Read(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+func (d *SimpleQueryCache) Read(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
 	key, err := getKey(query, variables)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (d SimpleQueryCache) Read(ctx context.Context, query string, variables map[
 	return nil, nil
 }
 
-func (d SimpleQueryCache) Write(ctx context.Context, query string, variables map[string]interface{}, res []byte) error {
+func (d *SimpleQueryCache) Write(ctx context.Context, query string, variables map[string]interface{}, res []byte) error {
 	key, err := getKey(query, variables)
 	if err != nil {
 		return err
