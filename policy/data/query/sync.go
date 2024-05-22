@@ -80,14 +80,12 @@ func (ds SyncGraphqlQueryClient) Query(ctx context.Context, queryName string, qu
 
 	log.Infof("Graphql endpoint: %s", ds.url)
 	log.Infof("Executing query %s: %s", queryName, query)
-	log.Infof("Query variables: %v", variables)
+	log.Debugf("Query variables: %v", variables)
 
 	res, err := ds.requestWithCache(ctx, query, variables)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Infof("GraphQL query response: %s", string(res))
 
 	err = graphql.UnmarshalGraphQL(res, output)
 	if err != nil {
@@ -123,7 +121,6 @@ func (ds SyncGraphqlQueryClient) requestWithCache(ctx context.Context, query str
 }
 
 func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
-
 	in := SyncGraphQLQueryBody{
 		Query:     query,
 		Variables: variables,
@@ -195,9 +192,10 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 	}
 
 	if len(out.Errors) > 0 {
-
 		return rawData, out.Errors
 	}
+
+	ds.logger.Debugf("Sync GQL query response: %s", string(rawData))
 
 	return rawData, nil
 }
