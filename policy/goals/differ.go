@@ -15,7 +15,10 @@ func GoalResultsDiffer(log skill.Logger, queryResults []GoalEvaluationQueryResul
 	storageId := "no-data"
 
 	if queryResults != nil {
-		hash, err := hashstructure.Hash(queryResults, hashstructure.FormatV2, nil)
+		hashOptions := hashstructure.HashOptions{
+			SlicesAsSets: true,
+		}
+		hash, err := hashstructure.Hash(queryResults, hashstructure.FormatV2, &hashOptions)
 		if err != nil {
 			return false, "", fmt.Errorf("failed to generate storage id for image %s: %s", digest, err)
 		}
@@ -57,7 +60,10 @@ func GoalConfigsDiffer(log skill.Logger, config skill.Configuration, digest stri
 		}
 	}
 
-	hash, err := hashstructure.Hash(values, hashstructure.FormatV2, nil)
+	hashOptions := hashstructure.HashOptions{
+		SlicesAsSets: true,
+	}
+	hash, err := hashstructure.Hash(values, hashstructure.FormatV2, &hashOptions)
 	if err != nil {
 		return false, "", fmt.Errorf("failed to generate config hash for image %s: %s", digest, err)
 	}
