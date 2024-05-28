@@ -56,10 +56,14 @@ func createSBOMFromManifest(ctx context.Context, req skill.RequestContext, subsc
 
 	image := util.Decode[goals.ImageSubscriptionQueryResult](imageEdn)
 
+	ref := image.ImageRepo.Repository
+	if image.ImageRepo.Host != "hub.docker.com" {
+		ref = image.ImageRepo.Host + "/" + ref
+	}
 	digest := image.ImageDigest
 
 	sst := storage.NewSBOMStore(ctx)
-	if sb, ok := sst.Read(req, digest); ok {
+	if sb, ok := sst.Read(ref, digest); ok {
 		return sb, nil
 	} else {
 		return nil, fmt.Errorf("sbom not found in storage")

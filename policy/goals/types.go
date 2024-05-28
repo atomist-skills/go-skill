@@ -99,6 +99,7 @@ type (
 	ImageSubscriptionQueryResult struct {
 		ImageDigest    string                  `edn:"docker.image/digest"`
 		ImagePlatforms []ImagePlatform         `edn:"docker.image/platform" json:"platforms"`
+		ImageRepo      *SubscriptionRepository `edn:"docker.image/repository"`
 		FromReference  *SubscriptionImage      `edn:"docker.image/from"`
 		FromRepo       *SubscriptionRepository `edn:"docker.image/from-repository"`
 		FromTag        string                  `edn:"docker.image/from-tag"`
