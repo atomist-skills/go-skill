@@ -108,7 +108,13 @@ func (ds SyncGraphqlQueryClient) requestWithCache(ctx context.Context, query str
 		}
 	}
 
-	res, err := ds.request(ctx, query, variables)
+	res, canRetry, err := ds.request(ctx, query, variables)
+
+	if err != nil && canRetry && ds.retryBackoff > 0 {
+		time.Sleep(ds.retryBackoff)
+		res, _, err = ds.request(ctx, query, variables)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +126,7 @@ func (ds SyncGraphqlQueryClient) requestWithCache(ctx context.Context, query str
 	return res, err
 }
 
-func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, error) {
+func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, variables map[string]interface{}) ([]byte, bool, error) {
 	in := SyncGraphQLQueryBody{
 		Query:     query,
 		Variables: variables,
@@ -129,7 +135,7 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(in)
 	if err != nil {
-		return nil, fmt.Errorf("problem encoding request: %w", err)
+		return nil, false, fmt.Errorf("problem encoding request: %w", err)
 	}
 
 	reqReader := bytes.NewReader(buf.Bytes())
@@ -137,7 +143,7 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 	if err != nil {
 		e := fmt.Errorf("problem encoding request: %w", err)
 
-		return nil, e
+		return nil, false, e
 	}
 	request.Header.Add("Content-Type", "application/json")
 
@@ -151,20 +157,9 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 
 	if err != nil {
 		e := fmt.Errorf("problem making request: %w", err)
-		return nil, e
+		return nil, false, e
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode >= 500 && ds.retryBackoff > 0 {
-		time.Sleep(ds.retryBackoff)
-
-		resp, err = ds.httpClient.Do(request)
-		if err != nil {
-			e := fmt.Errorf("problem making request: %w", err)
-			return nil, e
-		}
-		defer resp.Body.Close()
-	}
 
 	r := resp.Body
 
@@ -172,7 +167,7 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 		body, _ := io.ReadAll(resp.Body)
 		err := fmt.Errorf("%v; body: %q", resp.Status, body)
 
-		return nil, err
+		return nil, resp.StatusCode >= http.StatusInternalServerError, err
 	}
 
 	var out struct {
@@ -183,7 +178,7 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 	err = json.NewDecoder(r).Decode(&out)
 
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	var rawData []byte
@@ -192,10 +187,13 @@ func (ds SyncGraphqlQueryClient) request(ctx context.Context, query string, vari
 	}
 
 	if len(out.Errors) > 0 {
-		return rawData, out.Errors
+		errorMessage := out.Errors[0].Message
+		retryable := errorMessage == "An unexpected error has occurred"
+
+		return rawData, retryable, out.Errors
 	}
 
 	ds.logger.Debugf("Sync GQL query response: %s", string(rawData))
 
-	return rawData, nil
+	return rawData, false, nil
 }
