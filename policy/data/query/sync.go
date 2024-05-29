@@ -58,7 +58,11 @@ func (ds SyncGraphqlQueryClient) WithCorrelationId(correlationId string) SyncGra
 }
 
 func (ds SyncGraphqlQueryClient) WithBasisT(basisT int64) SyncGraphqlQueryClient {
-	ds.basisT = &basisT
+	if basisT == 0 {
+		ds.basisT = nil
+	} else {
+		ds.basisT = &basisT
+	}
 
 	return ds
 }
