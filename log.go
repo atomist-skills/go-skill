@@ -17,16 +17,13 @@
 package skill
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
@@ -86,53 +83,6 @@ type Logger struct {
 func createLogger(ctx context.Context, event EventIncoming) Logger {
 	logger := Logger{}
 
-	var sendLog = func(bs []byte) bool {
-		client := &http.Client{}
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, event.Urls.Logs, bytes.NewBuffer(bs))
-		req.Header.Set("Authorization", "Bearer "+event.Token)
-		req.Header.Set("Content-Type", "application/edn")
-		if err != nil {
-			Log.Warnf("Failed to create log http request: %s", err)
-			return true
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			Log.Warnf("Failed to execute log http request: %s", err)
-			return false
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != 202 {
-			Log.Warnf("Error sending logs: %s\n%s", resp.Status, string(bs))
-			return false
-		}
-		return true
-	}
-
-	var doLog = func(msg string, level edn.Keyword) {
-		// Don't send logs when evaluating policies locally
-		if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" || event.Type == "sync-request" {
-			return
-		}
-		bs, err := edn.MarshalPPrint(internal.LogBody{Logs: []internal.LogEntry{{
-			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.999Z"),
-			Level:     level,
-			Text:      msg,
-		}}}, nil)
-		if err != nil {
-			Log.Panicf("Failed to marshal log message: %s", err)
-			return
-		}
-
-		retryCount := 1
-		for i := 0; i <= retryCount; i++ {
-			if sendLog(bs) {
-				break
-			}
-			time.Sleep(time.Millisecond * 500)
-		}
-	}
-
 	var gcpLogger *logging.Logger
 	var client *logging.Client
 	labels := make(map[string]string)
@@ -174,42 +124,34 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 
 	logger.Debug = func(msg string) {
 		Log.Debug(msg)
-		doLog(msg, internal.Debug)
 		doGcpLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
 		Log.Debugf(format, a...)
-		doLog(fmt.Sprintf(format, a...), internal.Debug)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
 	logger.Info = func(msg string) {
 		Log.Info(msg)
-		doLog(msg, internal.Info)
 		doGcpLog(msg, internal.Info)
 	}
 	logger.Infof = func(format string, a ...any) {
 		Log.Infof(format, a...)
-		doLog(fmt.Sprintf(format, a...), internal.Info)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Info)
 	}
 	logger.Warn = func(msg string) {
 		Log.Warn(msg)
-		doLog(msg, internal.Warn)
 		doGcpLog(msg, internal.Warn)
 	}
 	logger.Warnf = func(format string, a ...any) {
 		Log.Warnf(format, a...)
-		doLog(fmt.Sprintf(format, a...), internal.Warn)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Warn)
 	}
 	logger.Error = func(msg string) {
 		Log.Error(msg)
-		doLog(msg, internal.Error)
 		doGcpLog(msg, internal.Error)
 	}
 	logger.Errorf = func(format string, a ...any) {
 		Log.Errorf(format, a...)
-		doLog(fmt.Sprintf(format, a...), internal.Error)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Error)
 	}
 	logger.Close = func() {
