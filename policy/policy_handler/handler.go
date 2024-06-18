@@ -182,6 +182,7 @@ func (h EventHandler) evaluate(ctx context.Context, req skill.RequestContext, da
 		TeamId:       req.Event.WorkspaceId,
 		Organization: req.Event.Organization,
 		Goal:         goal,
+		Event:        req.Event,
 	}
 
 	evaluationResult, err := evaluator.EvaluateGoal(ctx, evalContext, sbom, subscriptionResult)
