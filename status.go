@@ -21,6 +21,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/atomist-skills/go-skill/internal"
 
@@ -61,7 +62,7 @@ func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 	}
 
 	req.Log.Debugf("Sending status: %s", string(bs))
-	client := &http.Client{}
+	client := http.DefaultClient
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, req.Event.Urls.Execution, bytes.NewBuffer(bs))
 	httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
 	httpReq.Header.Set("Content-Type", "application/edn")
@@ -70,12 +71,16 @@ func sendStatus(ctx context.Context, req RequestContext, status Status) error {
 	}
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return err
+		time.Sleep(time.Millisecond * 100)
+		resp, err = client.Do(httpReq)
+		if err != nil {
+			return err
+		}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 202 {
-		Log.Warnf("Error sending logs: %s", resp.Status)
+		Log.Warnf("Error sending status: %s", resp.Status)
 	}
 
 	return nil
