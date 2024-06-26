@@ -34,7 +34,7 @@ func getSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.
 		SubscriptionBasisT: req.Event.Context.Subscription.Metadata.AfterBasisT,
 	}
 
-	sb, err := createSBOMFromManifest(ctx, req, evalMeta.SubscriptionResult)
+	sb, err := createSBOMFromManifest(ctx, evalMeta.SubscriptionResult)
 	if err == nil {
 		return evalMeta, req.Event.Context.Subscription.Configuration, sb, nil
 	}
@@ -47,7 +47,7 @@ func getSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.
 	return evalMeta, req.Event.Context.Subscription.Configuration, sb, nil
 }
 
-func createSBOMFromManifest(ctx context.Context, req skill.RequestContext, subscriptionResult []map[edn.Keyword]edn.RawMessage) (*types.SBOM, error) {
+func createSBOMFromManifest(ctx context.Context, subscriptionResult []map[edn.Keyword]edn.RawMessage) (*types.SBOM, error) {
 	imageEdn, ok := subscriptionResult[0][edn.Keyword("image")]
 
 	if !ok {
@@ -56,10 +56,14 @@ func createSBOMFromManifest(ctx context.Context, req skill.RequestContext, subsc
 
 	image := util.Decode[goals.ImageSubscriptionQueryResult](imageEdn)
 
+	ref := image.ImageRepo.Repository
+	if image.ImageRepo.Host != "hub.docker.com" {
+		ref = image.ImageRepo.Host + "/" + ref
+	}
 	digest := image.ImageDigest
 
 	sst := storage.NewSBOMStore(ctx)
-	if sb, ok := sst.Read(req, digest); ok {
+	if sb, ok := sst.Read(ref, digest); ok {
 		return sb, nil
 	} else {
 		return nil, fmt.Errorf("sbom not found in storage")
@@ -162,5 +166,5 @@ func createSBOMFromSubscriptionResult(req skill.RequestContext, subscriptionResu
 		}
 	}
 
-	return sbom, nil
+	return &sbom, nil
 }

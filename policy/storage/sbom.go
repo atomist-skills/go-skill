@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
-	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/types"
 	"google.golang.org/api/googleapi"
 )
@@ -25,11 +24,11 @@ type (
 	}
 )
 
-func (c *Cache) Read(req skill.RequestContext, digest string) (*types.SBOM, bool) {
+func (c *Cache) Read(ref, digest string) (*types.SBOM, bool) {
 	bucket := c.client.Bucket(c.bucketName)
 	seg := make([]string, 0)
 	seg = append(seg, c.directory)
-	seg = append(seg, req.Event.WorkspaceId)
+	seg = append(seg, ref)
 	seg = append(seg, digest)
 
 	storageObject := bucket.Object(strings.Join(seg, "/"))
