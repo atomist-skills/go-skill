@@ -6,13 +6,16 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/atomist-skills/go-skill/environment"
+
 	"cloud.google.com/go/storage"
 	"github.com/atomist-skills/go-skill/policy/types"
 	"google.golang.org/api/googleapi"
 )
 
 const (
-	bucketName = "atm-prod-stored-manifests"
+	bucketName        = "atm-prod-stored-manifests"
+	stagingBucketName = "atm-staging-stored-manifests"
 )
 
 type (
@@ -55,10 +58,14 @@ func (c *Cache) Read(ref, digest string) (*types.SBOM, bool) {
 
 func NewSBOMStore(ctx context.Context) *Cache {
 	gcs, _ := storage.NewClient(ctx)
+	bn := bucketName
+	if environment.IsStaging() {
+		bn = stagingBucketName
+	}
 	return &Cache{
 		ctx:        ctx,
 		client:     gcs,
-		bucketName: bucketName,
+		bucketName: bn,
 		directory:  "sbom",
 	}
 }

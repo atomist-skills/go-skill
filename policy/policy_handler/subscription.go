@@ -36,6 +36,7 @@ func getSubscriptionData(ctx context.Context, req skill.RequestContext) (*goals.
 
 	sb, err := createSBOMFromManifest(ctx, evalMeta.SubscriptionResult)
 	if err == nil {
+		req.Log.Debug("found sbom in storage")
 		return evalMeta, req.Event.Context.Subscription.Configuration, sb, nil
 	}
 
@@ -55,6 +56,10 @@ func createSBOMFromManifest(ctx context.Context, subscriptionResult []map[edn.Ke
 	}
 
 	image := util.Decode[goals.ImageSubscriptionQueryResult](imageEdn)
+
+	if image.ImageRepo == nil {
+		return nil, fmt.Errorf("image repository not found in subscription result")
+	}
 
 	ref := image.ImageRepo.Repository
 	if image.ImageRepo.Host != "hub.docker.com" {
