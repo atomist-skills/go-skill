@@ -38,7 +38,7 @@ type (
 		evalInputProviders   []evalInputProvider
 		queryClientProviders []queryClientProvider
 		transactFilters      []transactionFilter
-		proxyClientProvider  *proxyClientProvider
+		proxyClientProvider  proxyClientProvider
 	}
 
 	Opt func(handler *EventHandler)
@@ -140,7 +140,7 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 
 	var proxyClient *proxy.ProxyClient
 	if h.proxyClientProvider != nil {
-		provider := *h.proxyClientProvider
+		provider := h.proxyClientProvider
 		client := provider(ctx, req)
 		proxyClient = &client
 	}

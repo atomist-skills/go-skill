@@ -18,14 +18,13 @@ type ProxyClient struct {
 	correlationId   string
 	gqlUrl          string
 	entitlementsUrl string
-	proxyUrl        string
 }
 
-func NewProxyClientFromSkillRequest(ctx context.Context, proxyUrl string, req skill.RequestContext) ProxyClient {
-	return NewProxyClient(ctx, proxyUrl, req.Event.Urls.Graphql, req.Event.Urls.Entitlements, req.Event.Token, req.Event.ExecutionId)
+func NewProxyClientFromSkillRequest(ctx context.Context, req skill.RequestContext) ProxyClient {
+	return NewProxyClient(ctx, req.Event.Urls.Graphql, req.Event.Urls.Entitlements, req.Event.Token, req.Event.ExecutionId)
 }
 
-func NewProxyClient(ctx context.Context, proxyUrl, graphqlUrl, entitlementsUrl, token, correlationId string) ProxyClient {
+func NewProxyClient(ctx context.Context, graphqlUrl, entitlementsUrl, token, correlationId string) ProxyClient {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token, TokenType: "Bearer"},
 	))
@@ -33,11 +32,10 @@ func NewProxyClient(ctx context.Context, proxyUrl, graphqlUrl, entitlementsUrl, 
 	return ProxyClient{
 		httpClient:    *httpClient,
 		correlationId: correlationId,
-		proxyUrl:      proxyUrl,
 	}
 }
 
-func (c *ProxyClient) Evaluate(ctx context.Context, organization, teamId string, sbom *types.SBOM, args map[string]interface{}) (goals.EvaluationResult, error) {
+func (c *ProxyClient) Evaluate(ctx context.Context, organization, teamId, url string, sbom *types.SBOM, args map[string]interface{}) (goals.EvaluationResult, error) {
 	preq := EvaluateRequest{
 		EvaluateOptions: EvaluateOptions{
 			Organization: organization,
@@ -56,7 +54,7 @@ func (c *ProxyClient) Evaluate(ctx context.Context, organization, teamId string,
 		return goals.EvaluationResult{}, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.proxyUrl, bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		return goals.EvaluationResult{}, err
 	}
