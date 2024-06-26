@@ -11,6 +11,7 @@ import (
 
 	"github.com/atomist-skills/go-skill"
 	"github.com/atomist-skills/go-skill/policy/data"
+	"github.com/atomist-skills/go-skill/policy/data/proxy"
 	"github.com/atomist-skills/go-skill/policy/data/query"
 	"github.com/atomist-skills/go-skill/policy/goals"
 	"github.com/atomist-skills/go-skill/policy/transact"
@@ -26,6 +27,7 @@ type (
 	evalInputProvider   func(ctx context.Context, req skill.RequestContext) (*goals.EvaluationMetadata, skill.Configuration, *types.SBOM, error)
 	queryClientProvider func(ctx context.Context, req skill.RequestContext, evalMeta goals.EvaluationMetadata) ([]query.QueryClient, error)
 	transactionFilter   func(ctx context.Context, req skill.RequestContext) bool
+	proxyClientProvider func(ctx context.Context, req skill.RequestContext) proxy.ProxyClient
 
 	EventHandler struct {
 		// parameters
@@ -36,6 +38,7 @@ type (
 		evalInputProviders   []evalInputProvider
 		queryClientProviders []queryClientProvider
 		transactFilters      []transactionFilter
+		proxyClientProvider  *proxyClientProvider
 	}
 
 	Opt func(handler *EventHandler)
@@ -134,7 +137,14 @@ func (h EventHandler) handle(ctx context.Context, req skill.RequestContext) skil
 	}
 
 	queryClient := query.NewChainQueryClient(sources...)
-	dataSource := data.NewDataSource(queryClient)
+
+	var proxyClient *proxy.ProxyClient
+	if h.proxyClientProvider != nil {
+		provider := *h.proxyClientProvider
+		client := provider(ctx, req)
+		proxyClient = &client
+	}
+	dataSource := data.NewDataSource(queryClient, proxyClient)
 
 	return h.evaluate(ctx, req, dataSource, *evaluationMetadata, *sbom, configuration)
 }
