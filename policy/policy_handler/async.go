@@ -58,12 +58,12 @@ func getAsyncInputData(ctx context.Context, req skill.RequestContext) (*goals.Ev
 		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to unmarshal async metadata: %w", err)
 	}
 
-	sbom, err := createSbomFromSubscriptionResult(metadata.EvaluationMetadata.SubscriptionResult, req)
+	sbom, err := createSBOMFromSubscriptionResult(req, metadata.EvaluationMetadata.SubscriptionResult)
 	if err != nil {
 		return nil, skill.Configuration{}, nil, fmt.Errorf("failed to create SBOM from subscription result: %w", err)
 	}
 
-	return &metadata.EvaluationMetadata, req.Event.Context.AsyncQueryResult.Configuration, &sbom, nil
+	return &metadata.EvaluationMetadata, req.Event.Context.AsyncQueryResult.Configuration, sbom, nil
 }
 
 func buildAsyncDataSources(multipleQuerySupport bool) queryClientProvider {
