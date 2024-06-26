@@ -95,7 +95,7 @@ func Simulate(options SimulateOptions, t *testing.T) SimulateResult {
 }
 `, options.Skill.Id, options.Skill.Namespace, options.Skill.Name, options.Skill.Version, schemata, subscriptionName[0:len(subscriptionName)-4], string(subscription), string(configuration), string(txData))
 
-	client := &http.Client{}
+	client := http.DefaultClient
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.atomist.com/datalog/team/%s/simulate", options.WorkspaceId), strings.NewReader(payload))
 	req.Header.Set("Authorization", "Bearer "+options.Token)
 	req.Header.Set("Content-Type", "application/edn")

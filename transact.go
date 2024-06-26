@@ -217,7 +217,7 @@ func createMessageSender(ctx context.Context, req RequestContext) messageSender 
 			return err
 		}
 
-		client := &http.Client{}
+		client := http.DefaultClient
 
 		req.Log.Debugf("Transacting entities: %s", string(bs))
 

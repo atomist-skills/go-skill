@@ -80,7 +80,7 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 		message.CorrelationId = uuid.NewString()
 	}
 
-	client := &http.Client{}
+	client := http.DefaultClient
 
 	logger.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
