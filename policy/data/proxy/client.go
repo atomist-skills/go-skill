@@ -30,8 +30,10 @@ func NewProxyClient(ctx context.Context, graphqlUrl, entitlementsUrl, token, cor
 	))
 
 	return ProxyClient{
-		httpClient:    *httpClient,
-		correlationId: correlationId,
+		httpClient:      *httpClient,
+		correlationId:   correlationId,
+		gqlUrl:          graphqlUrl,
+		entitlementsUrl: entitlementsUrl,
 	}
 }
 
