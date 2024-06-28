@@ -52,6 +52,7 @@ type Vulnerability struct {
 	Cwes            []Cwe     `graphql:"cwes" json:"cwes,omitempty"`
 	VexStatements   []vex.VEX `graphql:"-" json:"vex_statements,omitempty"`
 	Epss            *Epss     `graphql:"epss" json:"epss,omitempty"`
+	CisaExploited   bool      `graphql:"cisaExploited" json:"cisa_exploited,omitempty"`
 }
 
 type Epss struct {
