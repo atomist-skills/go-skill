@@ -36,6 +36,7 @@ const (
 					updatedAt
 					url
 					vulnerableRange
+					cisaExploited 
 				}
 			  }
 			}
@@ -77,6 +78,7 @@ const (
 			updatedAt
 			url
 			vulnerableRange
+			cisaExploited 
 			}
 		}
 	}`
