@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 
+	govex "github.com/openvex/go-vex/pkg/vex"
+
 	"github.com/atomist-skills/go-skill/policy/data/query"
 	"github.com/atomist-skills/go-skill/policy/data/query/jynx"
 	"github.com/atomist-skills/go-skill/policy/goals"
@@ -40,7 +42,23 @@ func (ds *DataSource) GetImageVulnerabilities(ctx context.Context, evalCtx goals
 		normalization.DenormalizeSBOM(&vulnsResponse, purlMapping)
 
 		for _, vulnsByPurl := range vulnsResponse.VulnerabilitiesByPackage {
-			vulns[vulnsByPurl.Purl] = vulnsByPurl.Vulnerabilities
+			affected := true
+			for _, v := range imageSbom.VexDocuments {
+				for _, stmt := range v.Statements {
+					purl, upstreamPurl := normalization.NormalizePURL(vulnsByPurl.Purl, nil)
+					for _, p := range stmt.Products {
+						if normalization.ContainsPurl(p.Subcomponents, purl) || normalization.ContainsPurl(p.Subcomponents, upstreamPurl) {
+							if stmt.Status == govex.StatusNotAffected || stmt.Status == govex.StatusFixed {
+								affected = false
+							}
+						}
+					}
+				}
+			}
+
+			if affected {
+				vulns[vulnsByPurl.Purl] = vulnsByPurl.Vulnerabilities
+			}
 		}
 	} else {
 		var response jynx.ImagePackagesByDigestResponse
