@@ -8,6 +8,7 @@ import (
 	"github.com/anchore/syft/syft/linux"
 	"github.com/atomist-skills/go-skill/internal"
 	"github.com/atomist-skills/go-skill/policy/types"
+	"github.com/openvex/go-vex/pkg/vex"
 )
 
 // NormalizeSBOM creates the canonical representation of our internal PURL model
@@ -91,6 +92,28 @@ func NormalizePURL(pkg string, d *types.Distro) (string, string) {
 		upstreamPurl = purl.String()
 	}
 	return pkgPurl, upstreamPurl
+}
+
+func ContainsPurl(purls []vex.Subcomponent, purl string) bool {
+	p, _ := ToPackageUrl(purl)
+	for _, pu := range purls {
+		np, nsp := NormalizePURL(pu.ID, nil)
+		npp, err := ToPackageUrl(np)
+		if err != nil {
+			continue
+		}
+		if npp.Type == p.Type && npp.Namespace == p.Namespace && npp.Name == p.Name && npp.Version == p.Version {
+			return true
+		}
+		nspp, err := ToPackageUrl(nsp)
+		if err != nil {
+			continue
+		}
+		if nspp.Type == p.Type && nspp.Namespace == p.Namespace && nspp.Name == p.Name && nspp.Version == p.Version {
+			return true
+		}
+	}
+	return false
 }
 
 func ToPackageUrl(url string) (anchorepackageurl.PackageURL, error) {
