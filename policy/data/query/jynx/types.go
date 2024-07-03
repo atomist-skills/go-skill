@@ -60,6 +60,7 @@ type (
 		UpdatedAt       string  `json:"updatedAt" edn:"updatedAt"`
 		URL             *string `json:"url" edn:"url"`
 		VulnerableRange string  `json:"vulnerableRange" edn:"vulnerableRange"`
+		CisaExploited   bool    `json:"cisaExploited" edn:"cisaExploited"`
 	}
 
 	Cvss struct {
