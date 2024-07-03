@@ -72,6 +72,7 @@ func convertToVulnerabilities(vulnerabilities []jynx.Vulnerability) []types.Vuln
 			SourceId:        vulnerability.SourceID,
 			UpdatedAt:       vulnerability.UpdatedAt,
 			VulnerableRange: vulnerability.VulnerableRange,
+			CisaExploited:   vulnerability.CisaExploited,
 		}
 
 		if vulnerability.Cvss.Score != nil {
