@@ -33,6 +33,7 @@ func (ds *DataSource) GetImageVulnerabilities(ctx context.Context, evalCtx goals
 		r, err := ds.jynxGQLClient.Query(ctx, jynx.VulnerabilitiesByPackageQueryName, jynx.VulnerabilitiesByPackageQuery, map[string]interface{}{
 			"context": query.GqlContext(evalCtx),
 			"purls":   purls,
+			"digest":  imageSbom.Source.Image.Digest,
 		}, &vulnsResponse)
 		if err != nil || r.AsyncRequestMade {
 			return r, nil, nil, err

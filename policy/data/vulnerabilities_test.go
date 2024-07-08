@@ -131,6 +131,11 @@ func Test_GetImageVulnerabilities_WhenSbomHasVulnerabilities(t *testing.T) {
 
 func Test_GetImageVulnerabilities_WhenSbomHasArtifacts_AndNoVulnerabilities(t *testing.T) {
 	sbom := types.SBOM{
+		Source: types.Source{
+			Image: &types.ImageSource{
+				Digest: "sha256:123456",
+			},
+		},
 		Artifacts: []types.Package{
 			{
 				Purl: "pkg:pypi/requests@2.25.1",
