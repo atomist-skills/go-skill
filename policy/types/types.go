@@ -130,10 +130,10 @@ type VCS struct {
 }
 
 type ProvenanceBaseImage struct {
-	Name     string
-	Tag      string
-	Digest   string
-	Platform *v1.Platform
+	Name     string `json:"name,omitempty"`
+	Tag      string `json:"tag,omitempty"`
+	Digest   string `json:"digest,omitempty"`
+	Platform *v1.Platform `json:"platform,omitempty"`
 }
 
 type Stream struct {
