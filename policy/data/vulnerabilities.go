@@ -107,7 +107,7 @@ func cveMatch(cveID string, stmt govex.Statement) bool {
 // purlMatch checks whether a purl is present in at least one of the following locations:
 // - Component
 // - Subcomponent(s)
-// - Special case for org-scoped VEXed CVEs.
+// - Special case for image-scoped exceptions.
 func purlMatch(purl string, stmt govex.Statement) bool {
 	purl, upstreamPurl := normalization.NormalizePURL(purl, nil)
 
