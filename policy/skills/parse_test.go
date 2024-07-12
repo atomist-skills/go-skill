@@ -86,6 +86,16 @@ func TestParseIntArgs(t *testing.T) {
 			arg:  int64(30),
 			want: 30,
 		},
+		{
+			name: "Parse int32 arg",
+			arg:  int32(30),
+			want: 30,
+		},
+		{
+			name: "Parse float64 arg",
+			arg:  float64(30),
+			want: 30,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
