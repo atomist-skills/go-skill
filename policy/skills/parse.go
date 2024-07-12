@@ -47,6 +47,11 @@ func ParseIntArg(arg interface{}) int64 {
 		return parsedArgAsInt64
 	}
 
+	parsedArgAsInt32, ok := arg.(int32)
+	if ok {
+		return int64(parsedArgAsInt32)
+	}
+
 	parsedArgAsFloat, ok := arg.(float64)
 	if ok {
 		return int64(parsedArgAsFloat)
