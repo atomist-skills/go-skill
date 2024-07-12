@@ -120,7 +120,7 @@ func purlMatch(purl string, stmt govex.Statement) bool {
 		if normalization.ContainsPurl(p.Subcomponents, purl) || normalization.ContainsPurl(p.Subcomponents, upstreamPurl) {
 			return true
 		}
-		// If none of the previous conditions matched, we add this special case to support org-scoped VEXed CVEs.
+		// If none of the previous conditions matched, we add this special case to support image-scoped exceptions.
 		// The purpose of this is to align with how VEX works in the platform side.
 		if len(p.Subcomponents) == 0 {
 			return true
