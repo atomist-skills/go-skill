@@ -51,11 +51,16 @@ func init() {
 			Log.SetLevel(logrus.WarnLevel)
 		}
 	}
-	Log.SetFormatter(&logrus.TextFormatter{
-		DisableTimestamp: true,
-		PadLevelText:     true,
-		ForceColors:      runtime.GOOS != "windows",
-	})
+
+	if v, ok := os.LookupEnv("ATOMIST_LOG_FORMAT"); ok && v == "json" {
+		Log.SetFormatter(&logrus.JSONFormatter{})
+	} else {
+		Log.SetFormatter(&logrus.TextFormatter{
+			DisableTimestamp: true,
+			PadLevelText:     true,
+			ForceColors:      runtime.GOOS != "windows",
+		})
+	}
 
 	// try to obtain the GCP project id
 	if _, ok := os.LookupEnv("K_SERVICE"); ok {
