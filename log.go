@@ -62,10 +62,12 @@ func init() {
 		})
 	}
 
-	// try to obtain the GCP project id
-	if _, ok := os.LookupEnv("K_SERVICE"); ok {
-		projectID, _ = metadata.ProjectID()
-		instanceID, _ = metadata.InstanceID()
+	if v, ok := os.LookupEnv("ATOMIST_LOG_GCP"); !ok || v == "true" {
+		// try to obtain the GCP project id
+		if _, ok := os.LookupEnv("K_SERVICE"); ok {
+			projectID, _ = metadata.ProjectID()
+			instanceID, _ = metadata.InstanceID()
+		}
 	}
 }
 
