@@ -62,10 +62,12 @@ func init() {
 		})
 	}
 
-	// try to obtain the GCP project id
-	if _, ok := os.LookupEnv("K_SERVICE"); ok {
-		projectID, _ = metadata.ProjectID()
-		instanceID, _ = metadata.InstanceID()
+	if v, ok := os.LookupEnv("ATOMIST_LOG_GCP"); !ok || v == "true" {
+		// try to obtain the GCP project id
+		if _, ok := os.LookupEnv("K_SERVICE"); ok {
+			projectID, _ = metadata.ProjectID()
+			instanceID, _ = metadata.InstanceID()
+		}
 	}
 }
 
@@ -91,19 +93,20 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 	var gcpLogger *logging.Logger
 	var client *logging.Client
 	labels := make(map[string]string)
+
+	labels["correlation_id"] = event.ExecutionId
+	labels["name"] = NameFromEvent(event)
+	labels["organization"] = event.Organization
+	labels["skill_id"] = fmt.Sprintf("%s/%s@%s", event.Skill.Namespace, event.Skill.Name, event.Skill.Version)
+	labels["skill_name"] = event.Skill.Name
+	labels["skill_namespace"] = event.Skill.Namespace
+	labels["skill_version"] = event.Skill.Version
+	labels["workspace_id"] = event.WorkspaceId
+	labels["instance_id"] = instanceID
+
 	if projectID != "" {
 		client, _ = logging.NewClient(ctx, projectID)
 		gcpLogger = client.Logger("skill_logging")
-
-		labels["correlation_id"] = event.ExecutionId
-		labels["name"] = NameFromEvent(event)
-		labels["organization"] = event.Organization
-		labels["skill_id"] = fmt.Sprintf("%s/%s@%s", event.Skill.Namespace, event.Skill.Name, event.Skill.Version)
-		labels["skill_name"] = event.Skill.Name
-		labels["skill_namespace"] = event.Skill.Namespace
-		labels["skill_version"] = event.Skill.Version
-		labels["workspace_id"] = event.WorkspaceId
-		labels["instance_id"] = instanceID
 	}
 
 	var doGcpLog = func(msg string, level edn.Keyword) {
@@ -127,36 +130,41 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 		}
 	}
 
+	localLabels := make(map[string]interface{})
+	for k, v := range labels {
+		localLabels[k] = v
+	}
+
 	logger.Debug = func(msg string) {
-		Log.Debug(msg)
+		Log.WithFields(localLabels).Debug(msg)
 		doGcpLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
-		Log.Debugf(format, a...)
+		Log.WithFields(localLabels).Debugf(format, a...)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
 	logger.Info = func(msg string) {
-		Log.Info(msg)
+		Log.WithFields(localLabels).Info(msg)
 		doGcpLog(msg, internal.Info)
 	}
 	logger.Infof = func(format string, a ...any) {
-		Log.Infof(format, a...)
+		Log.WithFields(localLabels).Infof(format, a...)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Info)
 	}
 	logger.Warn = func(msg string) {
-		Log.Warn(msg)
+		Log.WithFields(localLabels).Warn(msg)
 		doGcpLog(msg, internal.Warn)
 	}
 	logger.Warnf = func(format string, a ...any) {
-		Log.Warnf(format, a...)
+		Log.WithFields(localLabels).Warnf(format, a...)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Warn)
 	}
 	logger.Error = func(msg string) {
-		Log.Error(msg)
+		Log.WithFields(localLabels).Error(msg)
 		doGcpLog(msg, internal.Error)
 	}
 	logger.Errorf = func(format string, a ...any) {
-		Log.Errorf(format, a...)
+		Log.WithFields(localLabels).Errorf(format, a...)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Error)
 	}
 	logger.Close = func() {
