@@ -19,6 +19,7 @@ package skill
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"runtime"
@@ -87,7 +88,7 @@ type Logger struct {
 	Close func()
 }
 
-func createLogger(ctx context.Context, event EventIncoming) Logger {
+func createLogger(ctx context.Context, event EventIncoming, headers http.Header) Logger {
 	logger := Logger{}
 
 	var gcpLogger *logging.Logger
@@ -103,6 +104,12 @@ func createLogger(ctx context.Context, event EventIncoming) Logger {
 	labels["skill_version"] = event.Skill.Version
 	labels["workspace_id"] = event.WorkspaceId
 	labels["instance_id"] = instanceID
+
+	labels["request_id"] = headers.Get("X-Request-ID")
+	labels["forwarded_host"] = headers.Get("X-Forwarded-Host")
+	labels["original_forwarded_for"] = headers.Get("X-Original-Forwarded-For")
+	labels["cloud_trace_context"] = headers.Get("X-Cloud-Trace-Context")
+	labels["trace_parent"] = headers.Get("traceparent")
 
 	if projectID != "" {
 		client, _ = logging.NewClient(ctx, projectID)

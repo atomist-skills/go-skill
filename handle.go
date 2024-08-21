@@ -46,6 +46,7 @@ func Start(handlers Handlers) {
 
 func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		handleStart := time.Now()
 		buf := new(strings.Builder)
 		rc := r.Body
 		defer rc.Close()
@@ -65,13 +66,15 @@ func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		name := NameFromEvent(event)
 		ctx := context.Background()
-		logger := createLogger(ctx, event)
+		logger := createLogger(ctx, event, r.Header)
 		req := RequestContext{
 			Event: event,
 			Log:   logger,
 
 			ctx: ctx,
 		}
+
+		logger.Debugf("Skill request parsed in %d ms", time.Now().UnixMilli()-handleStart.UnixMilli())
 
 		defer func() {
 			if err := recover(); err != nil {
