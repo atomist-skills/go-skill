@@ -65,7 +65,7 @@ func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		name := NameFromEvent(event)
 		ctx := context.Background()
-		logger := createLogger(ctx, event)
+		logger := createLogger(ctx, event, r.Header)
 		req := RequestContext{
 			Event: event,
 			Log:   logger,

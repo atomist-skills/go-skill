@@ -68,7 +68,7 @@ func TestSuccessfulLogging(t *testing.T) {
 			Logs: server.URL,
 		},
 		Token: "token",
-	})
+	}, http.Header{})
 	logger.Infof("This is a %s message", "test")
 }
 
