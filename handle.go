@@ -91,7 +91,7 @@ func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 		start := time.Now()
 		logger.Debugf("Skill execution started")
 		if req.Event.Type != "sync-request" {
-			logger.Debugf("Incoming event message: %s", sanitizeEvent(body))
+			logger.Debugf("Incoming event message: %s", func() interface{} { return sanitizeEvent(body) })
 		}
 
 		defer func() {
