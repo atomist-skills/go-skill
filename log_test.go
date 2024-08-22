@@ -17,6 +17,7 @@
 package skill
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -24,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/atomist-skills/go-skill/internal"
+	"github.com/sirupsen/logrus"
 
 	"olympos.io/encoding/edn"
 )
@@ -89,5 +91,17 @@ func TestSanitizeEventWithSingleCharacterUser(t *testing.T) {
 
 	if strings.Contains(sanitizedEvent, "\"0\"") {
 		t.Errorf("user not sanitised")
+	}
+}
+
+func TestLoggingWithFunc(t *testing.T) {
+	var buf bytes.Buffer
+	Log.SetOutput(&buf)
+	Log.SetLevel(logrus.DebugLevel)
+	logger := createLogger(context.Background(), EventIncoming{}, http.Header{})
+	logger.Debugf("This is a %s message", func() interface{} { return "test" })
+
+	if !strings.Contains(buf.String(), "This is a test message") {
+		t.Errorf("Expected message not found")
 	}
 }

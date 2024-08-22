@@ -147,6 +147,7 @@ func createLogger(ctx context.Context, event EventIncoming, headers http.Header)
 		doGcpLog(msg, internal.Debug)
 	}
 	logger.Debugf = func(format string, a ...any) {
+		a = expandFuncs(a, logrus.DebugLevel)
 		Log.WithFields(localLabels).Debugf(format, a...)
 		doGcpLog(fmt.Sprintf(format, a...), internal.Debug)
 	}
@@ -183,6 +184,16 @@ func createLogger(ctx context.Context, event EventIncoming, headers http.Header)
 	debugInfo(logger, event)
 
 	return logger
+}
+
+func expandFuncs(a []any, level logrus.Level) []any {
+	for i, v := range a {
+		if f, ok := v.(func() interface{}); ok && Log.Level >= level {
+			a[i] = f()
+		}
+	}
+
+	return a
 }
 
 // SanitizeEvent removes any sensitive information from the incoming payload structure
