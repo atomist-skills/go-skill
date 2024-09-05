@@ -16,4 +16,5 @@ type Policy struct {
 	WithLocal            bool
 	WithAsync            bool
 	WithSyncQuery        bool
+	WithProxy            bool
 }
