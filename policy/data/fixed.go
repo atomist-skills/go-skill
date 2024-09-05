@@ -13,11 +13,11 @@ type vulnerabilityFetcher func(ctx context.Context, evalCtx goals.GoalEvaluation
 
 type fixedDataSource struct {
 	jynxGQLClient   query.QueryClient
-	proxyClient     *proxy.ProxyClient
+	proxyClient     proxy.ProxyClient
 	vulnerabilities vulnerabilityFetcher
 }
 
-func NewFixedDataSource(jynxGQLClient query.QueryClient, proxyClient *proxy.ProxyClient, vulnerabilities vulnerabilityFetcher) DataSource {
+func NewFixedDataSource(jynxGQLClient query.QueryClient, proxyClient proxy.ProxyClient, vulnerabilities vulnerabilityFetcher) DataSource {
 	return &fixedDataSource{
 		jynxGQLClient:   jynxGQLClient,
 		proxyClient:     proxyClient,
@@ -29,7 +29,7 @@ func (ds *fixedDataSource) GetQueryClient() query.QueryClient {
 	return ds.jynxGQLClient
 }
 
-func (ds *fixedDataSource) GetProxyClient() (*proxy.ProxyClient, error) {
+func (ds *fixedDataSource) GetProxyClient() (proxy.ProxyClient, error) {
 	return ds.proxyClient, nil
 }
 
