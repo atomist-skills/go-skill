@@ -31,7 +31,7 @@ import (
 // Start initiates startup of the skills given the provided Handlers
 func Start(handlers Handlers) {
 	Log.Info("Starting skill...")
-	http.HandleFunc("/", CreateHttpHandler(handlers))
+	http.HandleFunc("/", CreateHttpHandlerWithLogger(handlers, nil))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -45,6 +45,10 @@ func Start(handlers Handlers) {
 }
 
 func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Request) {
+	return CreateHttpHandlerWithLogger(handlers, nil)
+}
+
+func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		handleStart := time.Now()
 		buf := new(strings.Builder)
@@ -66,7 +70,7 @@ func CreateHttpHandler(handlers Handlers) func(http.ResponseWriter, *http.Reques
 
 		name := NameFromEvent(event)
 		ctx := context.Background()
-		logger := createLogger(ctx, event, r.Header)
+		logger := createLogger(ctx, event, r.Header, loggerCreator)
 		req := RequestContext{
 			Event: event,
 			Log:   logger,
