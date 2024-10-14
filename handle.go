@@ -82,7 +82,7 @@ func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) 
 
 		defer func() {
 			if err := recover(); err != nil {
-				sendStatus(ctx, req, Status{
+				SendStatus(ctx, req, Status{
 					State:  Failed,
 					Reason: fmt.Sprintf("Unsuccessfully invoked handler %s/%s@%s", event.Skill.Namespace, event.Skill.Name, name),
 				})
@@ -106,7 +106,7 @@ func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) 
 		if handle, ok := handlers[name]; ok {
 			logger.Debugf("Invoking event handler '%s'", name)
 
-			err = sendStatus(ctx, req, Status{
+			err = SendStatus(ctx, req, Status{
 				State: running,
 			})
 			if err != nil {
@@ -115,7 +115,7 @@ func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) 
 
 			status := handle(ctx, req)
 
-			err = sendStatus(ctx, req, status)
+			err = SendStatus(ctx, req, status)
 			if err != nil {
 				Log.Panicf("Failed to send status: %s", err)
 			}
@@ -134,7 +134,7 @@ func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) 
 				w.Write(b)
 			}
 		} else {
-			err = sendStatus(ctx, req, Status{
+			err = SendStatus(ctx, req, Status{
 				State:  Failed,
 				Reason: fmt.Sprintf("Event handler '%s' not found", name),
 			})
