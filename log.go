@@ -39,6 +39,8 @@ var (
 	instanceID string
 )
 
+type CreateLogger func(ctx context.Context, labels map[string]string) *Logger
+
 func init() {
 	Log = logrus.New()
 	Log.SetOutput(os.Stdout)
@@ -88,11 +90,7 @@ type Logger struct {
 	Close func()
 }
 
-func createLogger(ctx context.Context, event EventIncoming, headers http.Header) Logger {
-	logger := Logger{}
-
-	var gcpLogger *logging.Logger
-	var client *logging.Client
+func createCommonLabels(event EventIncoming, headers http.Header) map[string]string {
 	labels := make(map[string]string)
 
 	labels["correlation_id"] = event.ExecutionId
@@ -111,9 +109,22 @@ func createLogger(ctx context.Context, event EventIncoming, headers http.Header)
 	labels["cloud_trace_context"] = headers.Get("X-Cloud-Trace-Context")
 	labels["trace_parent"] = headers.Get("traceparent")
 
-	if projectID != "" {
-		client, _ = logging.NewClient(ctx, projectID)
-		gcpLogger = client.Logger("skill_logging")
+	return labels
+}
+
+func createGcpLogger(ctx context.Context, labels map[string]string) *Logger {
+	if projectID == "" {
+		return nil
+	}
+
+	var gcpLogger *logging.Logger
+	var client *logging.Client
+
+	client, _ = logging.NewClient(ctx, projectID)
+	gcpLogger = client.Logger("skill_logging")
+
+	if gcpLogger != nil {
+		return nil
 	}
 
 	var doGcpLog = func(msg string, level edn.Keyword) {
@@ -137,47 +148,145 @@ func createLogger(ctx context.Context, event EventIncoming, headers http.Header)
 		}
 	}
 
+	logger := Logger{
+		Debug: func(msg string) {
+			doGcpLog(msg, internal.Debug)
+		},
+		Debugf: func(format string, a ...any) {
+			doGcpLog(fmt.Sprintf(format, a...), internal.Debug)
+		},
+		Info: func(msg string) {
+			doGcpLog(msg, internal.Info)
+		},
+		Infof: func(format string, a ...any) {
+			doGcpLog(fmt.Sprintf(format, a...), internal.Info)
+		},
+		Warn: func(msg string) {
+			doGcpLog(msg, internal.Warn)
+		},
+		Warnf: func(format string, a ...any) {
+			doGcpLog(fmt.Sprintf(format, a...), internal.Warn)
+		},
+		Error: func(msg string) {
+			doGcpLog(msg, internal.Error)
+		},
+		Errorf: func(format string, a ...any) {
+			doGcpLog(fmt.Sprintf(format, a...), internal.Error)
+		},
+		Close: func() {
+			if client != nil {
+				_ = client.Close()
+			}
+		},
+	}
+
+	return &logger
+}
+
+func createDefaultLogger(ctx context.Context, labels map[string]string) *Logger {
 	localLabels := make(map[string]interface{})
 	for k, v := range labels {
 		localLabels[k] = v
 	}
 
+	logger := Logger{
+		Debug: func(msg string) {
+			Log.WithFields(localLabels).Debug(msg)
+		},
+		Debugf: func(format string, a ...any) {
+			Log.WithFields(localLabels).Debugf(format, a...)
+		},
+		Info: func(msg string) {
+			Log.WithFields(localLabels).Info(msg)
+		},
+		Infof: func(format string, a ...any) {
+			Log.WithFields(localLabels).Infof(format, a...)
+		},
+		Warn: func(msg string) {
+			Log.WithFields(localLabels).Warn(msg)
+		},
+		Warnf: func(format string, a ...any) {
+			Log.WithFields(localLabels).Warnf(format, a...)
+		},
+		Error: func(msg string) {
+			Log.WithFields(localLabels).Error(msg)
+		},
+		Errorf: func(format string, a ...any) {
+			Log.WithFields(localLabels).Errorf(format, a...)
+		},
+		Close: func() {
+		},
+	}
+
+	return &logger
+}
+
+func createLogger(ctx context.Context, event EventIncoming, headers http.Header, loggerCreator CreateLogger) Logger {
+	labels := createCommonLabels(event, headers)
+
+	loggerCreators := []CreateLogger{
+		createGcpLogger,
+	}
+
+	if loggerCreator != nil {
+		loggerCreators = append(loggerCreators, loggerCreator)
+	} else {
+		loggerCreators = append(loggerCreators, createDefaultLogger)
+	}
+
+	loggers := []Logger{}
+	for _, creator := range loggerCreators {
+		l := creator(ctx, labels)
+		if l != nil {
+			loggers = append(loggers, *l)
+		}
+	}
+
+	logger := Logger{}
 	logger.Debug = func(msg string) {
-		Log.WithFields(localLabels).Debug(msg)
-		doGcpLog(msg, internal.Debug)
+		for _, l := range loggers {
+			l.Debug(msg)
+		}
 	}
 	logger.Debugf = func(format string, a ...any) {
 		a = expandFuncs(a, logrus.DebugLevel)
-		Log.WithFields(localLabels).Debugf(format, a...)
-		doGcpLog(fmt.Sprintf(format, a...), internal.Debug)
+		for _, l := range loggers {
+			l.Debugf(format, a...)
+		}
 	}
 	logger.Info = func(msg string) {
-		Log.WithFields(localLabels).Info(msg)
-		doGcpLog(msg, internal.Info)
+		for _, l := range loggers {
+			l.Info(msg)
+		}
 	}
 	logger.Infof = func(format string, a ...any) {
-		Log.WithFields(localLabels).Infof(format, a...)
-		doGcpLog(fmt.Sprintf(format, a...), internal.Info)
+		for _, l := range loggers {
+			l.Infof(format, a...)
+		}
 	}
 	logger.Warn = func(msg string) {
-		Log.WithFields(localLabels).Warn(msg)
-		doGcpLog(msg, internal.Warn)
+		for _, l := range loggers {
+			l.Warn(msg)
+		}
 	}
 	logger.Warnf = func(format string, a ...any) {
-		Log.WithFields(localLabels).Warnf(format, a...)
-		doGcpLog(fmt.Sprintf(format, a...), internal.Warn)
+		for _, l := range loggers {
+			l.Warnf(format, a...)
+		}
 	}
 	logger.Error = func(msg string) {
-		Log.WithFields(localLabels).Error(msg)
-		doGcpLog(msg, internal.Error)
+		for _, l := range loggers {
+			l.Error(msg)
+		}
 	}
 	logger.Errorf = func(format string, a ...any) {
-		Log.WithFields(localLabels).Errorf(format, a...)
-		doGcpLog(fmt.Sprintf(format, a...), internal.Error)
+		for _, l := range loggers {
+			l.Errorf(format, a...)
+		}
 	}
 	logger.Close = func() {
-		if client != nil {
-			_ = client.Close()
+		for _, l := range loggers {
+			l.Close()
 		}
 	}
 

@@ -70,7 +70,7 @@ func TestSuccessfulLogging(t *testing.T) {
 			Logs: server.URL,
 		},
 		Token: "token",
-	}, http.Header{})
+	}, http.Header{}, nil)
 	logger.Infof("This is a %s message", "test")
 }
 
@@ -98,7 +98,7 @@ func TestLoggingWithFunc(t *testing.T) {
 	var buf bytes.Buffer
 	Log.SetOutput(&buf)
 	Log.SetLevel(logrus.DebugLevel)
-	logger := createLogger(context.Background(), EventIncoming{}, http.Header{})
+	logger := createLogger(context.Background(), EventIncoming{}, http.Header{}, nil)
 	logger.Debugf("This is a %s message", func() interface{} { return "test" })
 
 	if !strings.Contains(buf.String(), "This is a test message") {
