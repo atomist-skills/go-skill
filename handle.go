@@ -103,7 +103,7 @@ func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) 
 			logger.Debugf("Skill execution took %d ms", time.Now().UnixMilli()-start.UnixMilli())
 		}()
 
-		if handle, ok := handlers[name]; ok {
+		if handle, ok := handlers(name); ok {
 			logger.Debugf("Invoking event handler '%s'", name)
 
 			err = SendStatus(ctx, req, Status{
