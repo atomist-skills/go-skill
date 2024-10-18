@@ -148,4 +148,11 @@ func (r *RequestContext) NewTransaction() Transaction {
 
 type EventHandler func(ctx context.Context, req RequestContext) Status
 
-type Handlers map[string]EventHandler
+type Handlers func(name string) (EventHandler, bool)
+
+func HandlersFromMap(handlers map[string]EventHandler) Handlers {
+	return func(name string) (EventHandler, bool) {
+		handle, ok := handlers[name]
+		return handle, ok
+	}
+}
