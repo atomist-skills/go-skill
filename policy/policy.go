@@ -9,12 +9,7 @@ import (
 const VulnerabilityChangeEvent = "VulnerabilityChangeEvent"
 
 type Policy struct {
-	CreateEvaluatorFunc  func(map[string]interface{}, data.DataSource) (goals.GoalEvaluator, error)
-	Spec                 *skill.SkillSpec
-	EventSubscriptions   []string
-	DatalogSubscriptions []string
-	WithLocal            bool
-	WithAsync            bool
-	WithSyncQuery        bool
-	WithProxy            bool
+	CreateEvaluatorFunc func(map[string]interface{}, data.DataSource) (goals.GoalEvaluator, error)
+	Spec                *skill.SkillSpec
+	EventSubscriptions  []string
 }
