@@ -57,6 +57,10 @@ func NewRunningStatus(reason string) Status {
 }
 
 func SendStatus(ctx context.Context, req RequestContext, status Status) error {
+	return SendEventStatus(ctx, req.Event, req.Log, status)
+}
+
+func SendEventStatus(ctx context.Context, event EventIncoming, logger Logger, status Status) error {
 	// Don't send the status when evaluating policies locally
 	if os.Getenv("SCOUT_LOCAL_POLICY_EVALUATION") == "true" {
 		return nil
@@ -68,10 +72,10 @@ func SendStatus(ctx context.Context, req RequestContext, status Status) error {
 		return err
 	}
 
-	req.Log.Debugf("Sending status: %s", string(bs))
+	logger.Debugf("Sending status: %s", string(bs))
 	client := http.DefaultClient
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, req.Event.Urls.Execution, bytes.NewBuffer(bs))
-	httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPatch, event.Urls.Execution, bytes.NewBuffer(bs))
+	httpReq.Header.Set("Authorization", "Bearer "+event.Token)
 	httpReq.Header.Set("Content-Type", "application/edn")
 	if err != nil {
 		return err
