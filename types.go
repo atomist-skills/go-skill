@@ -128,22 +128,26 @@ type RequestContext struct {
 }
 
 func (r *RequestContext) NewTransaction() Transaction {
+	return NewTransactionFromRequest(r.ctx, r.Event, r.Log)
+}
+
+func NewTransactionFromRequest(ctx context.Context, event EventIncoming, logger Logger) Transaction {
 	var sender messageSender
-	if r.Event.Type != "" {
-		sender = createMessageSender(r.ctx, *r)
+	if event.Type != "" {
+		sender = createMessageSender(ctx, event, logger)
 	} else {
-		sender = createHttpMessageSender(r.Event.WorkspaceId, r.Event.Token, r.Event.ExecutionId, r.Log)
+		sender = createHttpMessageSender(event.WorkspaceId, event.Token, event.ExecutionId, logger)
 	}
 
 	transactor := func(entities []interface{}, ordered bool) error {
 		if ordered {
-			return sender.TransactOrdered(entities, r.Event.ExecutionId)
+			return sender.TransactOrdered(entities, event.ExecutionId)
 		}
 
 		return sender.Transact(entities)
 	}
 
-	return newTransaction(r.ctx, transactor)
+	return newTransaction(ctx, transactor)
 }
 
 type EventHandler func(ctx context.Context, req RequestContext) Status

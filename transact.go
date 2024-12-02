@@ -190,7 +190,7 @@ type messageSender struct {
 	TransactOrdered TransactOrdered
 }
 
-func createMessageSender(ctx context.Context, req RequestContext) messageSender {
+func createMessageSender(ctx context.Context, event EventIncoming, logger Logger) messageSender {
 	messageSender := messageSender{}
 
 	messageSender.TransactOrdered = func(entities interface{}, orderingKey string) error {
@@ -219,13 +219,13 @@ func createMessageSender(ctx context.Context, req RequestContext) messageSender 
 
 		client := http.DefaultClient
 
-		req.Log.Debugf("Transacting entities: %s", string(bs))
+		logger.Debugf("Transacting entities: %s", string(bs))
 
-		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Event.Urls.Transactions, bytes.NewBuffer(bs))
+		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, event.Urls.Transactions, bytes.NewBuffer(bs))
 		if err != nil {
 			return err
 		}
-		httpReq.Header.Set("Authorization", "Bearer "+req.Event.Token)
+		httpReq.Header.Set("Authorization", "Bearer "+event.Token)
 		httpReq.Header.Set("Content-Type", "application/edn")
 		resp, err := client.Do(httpReq)
 		if err != nil {
