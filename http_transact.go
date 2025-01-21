@@ -85,9 +85,9 @@ func httpTransact(entities interface{}, orderingKey string, workspace string, ap
 	logger.Debugf("Transacting entities with correlation id %s:\n%s", message.CorrelationId, string(bs))
 	j, _ := json.MarshalIndent(message, "", "  ")
 
-	url := "https://api.atomist.com/skills/remote/" + workspace
+	url := "https://api.scout.docker.com/v1/skills/remote/" + workspace
 	if environment.IsStaging() {
-		url = "https://api-staging.atomist.services/skills/remote/" + workspace
+		url = "https://api.scout-stage.docker.com/v1/skills/remote/" + workspace
 	}
 
 	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(j))
