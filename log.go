@@ -61,7 +61,7 @@ func init() {
 		Log.SetFormatter(&logrus.TextFormatter{
 			DisableTimestamp: true,
 			PadLevelText:     true,
-			ForceColors:      runtime.GOOS != "windows",
+			ForceColors:      true,
 		})
 	}
 
