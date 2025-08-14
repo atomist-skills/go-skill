@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -88,6 +89,7 @@ func CreateHttpHandlerWithLogger(handlers Handlers, loggerCreator CreateLogger) 
 				})
 				w.WriteHeader(201)
 				logger.Errorf("Unhandled error occurred: %v", err)
+				logger.Debugf("Unhandled error stack trace: %s", string(debug.Stack()))
 				return
 			}
 		}()
