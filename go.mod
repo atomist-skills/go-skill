@@ -7,7 +7,7 @@ require (
 	github.com/google/go-containerregistry v0.19.0
 	github.com/google/uuid v1.6.0
 	github.com/secure-systems-lab/go-securesystemslib v0.8.0
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3
 )
